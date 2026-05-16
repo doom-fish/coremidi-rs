@@ -1,10 +1,10 @@
 # coremidi-rs coverage audit (vs MacOSX26.2.sdk)
 
 SDK_PUBLIC_SYMBOLS: 235
-VERIFIED: 176
-GAPS: 30
+VERIFIED: 206
+GAPS: 0
 EXEMPT: 29
-COVERAGE_PCT: 85.44%
+COVERAGE_PCT: 100.00%
 
 - Counts cover top-level public CoreMIDI declarations (types, exported constants, Obj-C interfaces/protocols, and non-inline functions), not per-method Obj-C coverage.
 - `ffi::<symbol>` rows indicate exact raw C bindings in `coremidi::ffi`; raw extern functions/statics are feature-gated behind `raw-ffi`.
@@ -15,8 +15,15 @@ COVERAGE_PCT: 85.44%
 | `MIDIBluetoothDriverActivateAllConnections` | function | `MIDIBluetoothConnection.h` | `ffi::MIDIBluetoothDriverActivateAllConnections` |
 | `MIDIBluetoothDriverDisconnect` | function | `MIDIBluetoothConnection.h` | `ffi::MIDIBluetoothDriverDisconnect` |
 | `MIDICIDevice` | interface | `MIDICIDevice.h` | `capability::discovered_ci_devices / capability::CiDeviceInfo` |
-| `MIDICIDeviceManager` | interface | `MIDICIDeviceManager.h` | `capability::discovered_ci_devices` |
+| `MIDICIDeviceManager` | interface | `MIDICIDeviceManager.h` | `capability::discovered_ci_devices / capability::ci_device_manager_constants` |
+| `MIDICIDeviceObjectKey` | const | `MIDICIDeviceManager.h` | `capability::ci_device_manager_constants / capability::CiDeviceManagerConstants::device_object_key` |
+| `MIDICIDeviceWasAddedNotification` | const | `MIDICIDeviceManager.h` | `capability::ci_device_manager_constants / capability::CiDeviceManagerConstants::device_added_notification` |
+| `MIDICIDeviceWasRemovedNotification` | const | `MIDICIDeviceManager.h` | `capability::ci_device_manager_constants / capability::CiDeviceManagerConstants::device_removed_notification` |
 | `MIDICIProfile` | interface | `MIDICapabilityInquiry.h` | `capability::legacy_ci_profile / capability::LegacyCiProfileInfo` |
+| `MIDICIProfileObjectKey` | const | `MIDICIDeviceManager.h` | `capability::ci_device_manager_constants / capability::CiDeviceManagerConstants::profile_object_key` |
+| `MIDICIProfileState` | interface | `MIDICapabilityInquiry.h` | `capability::CiProfileState / capability::CiProfileStateInfo` |
+| `MIDICIProfileWasRemovedNotification` | const | `MIDICIDeviceManager.h` | `capability::ci_device_manager_constants / capability::CiDeviceManagerConstants::profile_removed_notification` |
+| `MIDICIProfileWasUpdatedNotification` | const | `MIDICIDeviceManager.h` | `capability::ci_device_manager_constants / capability::CiDeviceManagerConstants::profile_updated_notification` |
 | `MIDIDeviceCreate` | function | `MIDIDriver.h` | `ffi::MIDIDeviceCreate` |
 | `MIDIDeviceDispose` | function | `MIDIDriver.h` | `ffi::MIDIDeviceDispose` |
 | `MIDIDeviceListAddDevice` | function | `MIDIDriver.h` | `ffi::MIDIDeviceListAddDevice` |
@@ -31,9 +38,22 @@ COVERAGE_PCT: 85.44%
 | `MIDIGetDriverIORunLoop` | function | `MIDIDriver.h` | `ffi::MIDIGetDriverIORunLoop` |
 | `kMIDIDriverPropertyUsesSerial` | const | `MIDIDriver.h` | `ffi::kMIDIDriverPropertyUsesSerial` |
 | `MIDIEventListForEachEvent` | function | `MIDIMessages.h` | `packet::EventListRef::iter / EventIter` |
+| `MIDICVStatus` | enum | `MIDIMessages.h` | `packet::MidiCvStatus` |
+| `MIDIMessageType` | enum | `MIDIMessages.h` | `packet::MidiMessageType` |
+| `MIDIMessage_128` | struct | `MIDIMessages.h` | `packet::MidiMessage128 / ffi::MIDIMessage_128` |
+| `MIDIMessage_64` | struct | `MIDIMessages.h` | `packet::MidiMessage64 / ffi::MIDIMessage_64` |
+| `MIDIMessage_96` | struct | `MIDIMessages.h` | `packet::MidiMessage96 / ffi::MIDIMessage_96` |
+| `MIDINoteAttribute` | enum | `MIDIMessages.h` | `packet::MidiNoteAttribute` |
+| `MIDIPerNoteManagementOptions` | enum | `MIDIMessages.h` | `packet::MidiPerNoteManagementOptions` |
+| `MIDIProgramChangeOptions` | enum | `MIDIMessages.h` | `packet::MidiProgramChangeOptions` |
+| `MIDISysExStatus` | enum | `MIDIMessages.h` | `packet::MidiSysExStatus` |
+| `MIDISystemStatus` | enum | `MIDIMessages.h` | `packet::MidiSystemStatus` |
 | `MIDIUMPFunctionBlockDirection` | enum | `MIDIMessages.h` | `ffi::MIDIUMPFunctionBlockDirection` |
 | `MIDIUMPFunctionBlockMIDI1Info` | enum | `MIDIMessages.h` | `ffi::MIDIUMPFunctionBlockMIDI1Info` |
 | `MIDIUMPFunctionBlockUIHint` | enum | `MIDIMessages.h` | `ffi::MIDIUMPFunctionBlockUIHint` |
+| `MIDIUtilityStatus` | enum | `MIDIMessages.h` | `packet::MidiUtilityStatus` |
+| `UMPStreamMessageFormat` | enum | `MIDIMessages.h` | `packet::UmpStreamMessageFormat` |
+| `UMPStreamMessageStatus` | enum | `MIDIMessages.h` | `packet::UmpStreamMessageStatus` |
 | `MIDINetworkBonjourServiceType` | const | `MIDINetworkSession.h` | `network::NetworkConstants::bonjour_service_type` |
 | `MIDINetworkConnection` | interface | `MIDINetworkSession.h` | `network::NetworkConnection` |
 | `MIDINetworkConnectionPolicy` | enum | `MIDINetworkSession.h` | `network::NetworkConnectionPolicy` |
@@ -175,53 +195,32 @@ COVERAGE_PCT: 85.44%
 | `MIDI2DeviceRevisionLevel` | struct | `MIDIUMPCI.h` | `ffi::MIDI2DeviceRevisionLevel` |
 | `MIDICICategoryOptions` | enum | `MIDIUMPCI.h` | `capability::CiDeviceInfo::{supports_protocol_negotiation, supports_profile_configuration, supports_property_exchange, supports_process_inquiry}` |
 | `MIDICIDeviceType` | enum | `MIDIUMPCI.h` | `ffi::MIDICIDeviceType` |
+| `MIDICIManagementMessageType` | enum | `MIDIUMPCI.h` | `capability::CiManagementMessageType` |
+| `MIDICIProcessInquiryMessageType` | enum | `MIDIUMPCI.h` | `capability::CiProcessInquiryMessageType` |
 | `MIDICIProfileID` | struct | `MIDIUMPCI.h` | `ffi::MIDICIProfileID` |
 | `MIDICIProfileIDManufacturerSpecific` | struct | `MIDIUMPCI.h` | `ffi::MIDICIProfileIDManufacturerSpecific` |
 | `MIDICIProfileIDStandard` | struct | `MIDIUMPCI.h` | `ffi::MIDICIProfileIDStandard` |
+| `MIDICIProfileMessageType` | enum | `MIDIUMPCI.h` | `capability::CiProfileMessageType` |
 | `MIDICIProfileType` | enum | `MIDIUMPCI.h` | `ffi::MIDICIProfileType` |
+| `MIDICIPropertyExchangeMessageType` | enum | `MIDIUMPCI.h` | `capability::CiPropertyExchangeMessageType` |
 | `MIDIUMPCIObjectBackingType` | enum | `MIDIUMPCI.h` | `ffi::MIDIUMPCIObjectBackingType` |
 | `MIDIUMPCIProfile` | interface | `MIDIUMPCIProfile.h` | `capability::CiProfileInfo` |
 | `MIDI2DeviceInfo` | interface | `MIDIUMPEndpoint.h` | `endpoint::Midi2DeviceInfo / endpoint::Midi2DeviceInfoHandle` |
 | `MIDIUMPEndpoint` | interface | `MIDIUMPEndpoint.h` | `endpoint::UmpEndpointInfo / endpoint::UmpEndpointManager` |
 | `MIDIUMPProtocolOptions` | enum | `MIDIUMPEndpoint.h` | `ffi::MIDIUMPProtocolOptions` |
-| `MIDIUMPEndpointManager` | interface | `MIDIUMPEndpointManager.h` | `endpoint::UmpEndpointManager` |
+| `MIDIUMPEndpointManager` | interface | `MIDIUMPEndpointManager.h` | `endpoint::UmpEndpointManager::{endpoints, constants}` |
+| `MIDIUMPEndpointObjectKey` | const | `MIDIUMPEndpointManager.h` | `endpoint::UmpEndpointManager::constants / endpoint::UmpEndpointManagerConstants::endpoint_object_key` |
+| `MIDIUMPEndpointWasAddedNotification` | const | `MIDIUMPEndpointManager.h` | `endpoint::UmpEndpointManager::constants / endpoint::UmpEndpointManagerConstants::endpoint_added_notification` |
+| `MIDIUMPEndpointWasRemovedNotification` | const | `MIDIUMPEndpointManager.h` | `endpoint::UmpEndpointManager::constants / endpoint::UmpEndpointManagerConstants::endpoint_removed_notification` |
+| `MIDIUMPEndpointWasUpdatedNotification` | const | `MIDIUMPEndpointManager.h` | `endpoint::UmpEndpointManager::constants / endpoint::UmpEndpointManagerConstants::endpoint_updated_notification` |
 | `MIDIUMPFunctionBlock` | interface | `MIDIUMPFunctionBlock.h` | `endpoint::UmpFunctionBlockInfo` |
+| `MIDIUMPFunctionBlockObjectKey` | const | `MIDIUMPEndpointManager.h` | `endpoint::UmpEndpointManager::constants / endpoint::UmpEndpointManagerConstants::function_block_object_key` |
+| `MIDIUMPFunctionBlockWasUpdatedNotification` | const | `MIDIUMPEndpointManager.h` | `endpoint::UmpEndpointManager::constants / endpoint::UmpEndpointManagerConstants::function_block_updated_notification` |
 | `MIDIUMPMutableEndpoint` | interface | `MIDIUMPMutableEndpoint.h` | `endpoint::MutableUmpEndpoint` |
 | `MIDIUMPMutableFunctionBlock` | interface | `MIDIUMPMutableFunctionBlock.h` | `endpoint::MutableUmpFunctionBlock` |
 
 ## 🔴 GAPS
-| Symbol | Kind | Header | Notes |
-| --- | --- | --- | --- |
-| `MIDICIDeviceObjectKey` | const | `MIDICIDeviceManager.h` | MIDICIDeviceManager userInfo dictionary keys are not surfaced. |
-| `MIDICIDeviceWasAddedNotification` | const | `MIDICIDeviceManager.h` | MIDICIDeviceManager notifications are not surfaced. |
-| `MIDICIDeviceWasRemovedNotification` | const | `MIDICIDeviceManager.h` | MIDICIDeviceManager notifications are not surfaced. |
-| `MIDICIProfileObjectKey` | const | `MIDICIDeviceManager.h` | MIDICIDeviceManager userInfo dictionary keys are not surfaced. |
-| `MIDICIProfileWasRemovedNotification` | const | `MIDICIDeviceManager.h` | MIDICIDeviceManager notifications are not surfaced. |
-| `MIDICIProfileWasUpdatedNotification` | const | `MIDICIDeviceManager.h` | MIDICIDeviceManager notifications are not surfaced. |
-| `MIDICIProfileState` | interface | `MIDICapabilityInquiry.h` | No public wrapper for per-channel enabled/disabled profile-state snapshots. |
-| `MIDICVStatus` | enum | `MIDIMessages.h` | MIDIMessages.h typed UMP status/attribute enums are not exposed. |
-| `MIDIMessageType` | enum | `MIDIMessages.h` | MIDIMessages.h typed UMP status/attribute enums are not exposed. |
-| `MIDIMessage_128` | struct | `MIDIMessages.h` | Fixed-width MIDIMessages.h UMP helper structs are not exposed. |
-| `MIDIMessage_64` | struct | `MIDIMessages.h` | Fixed-width MIDIMessages.h UMP helper structs are not exposed. |
-| `MIDIMessage_96` | struct | `MIDIMessages.h` | Fixed-width MIDIMessages.h UMP helper structs are not exposed. |
-| `MIDINoteAttribute` | enum | `MIDIMessages.h` | MIDIMessages.h typed UMP status/attribute enums are not exposed. |
-| `MIDIPerNoteManagementOptions` | enum | `MIDIMessages.h` | MIDIMessages.h typed UMP status/attribute enums are not exposed. |
-| `MIDIProgramChangeOptions` | enum | `MIDIMessages.h` | MIDIMessages.h typed UMP status/attribute enums are not exposed. |
-| `MIDISysExStatus` | enum | `MIDIMessages.h` | MIDIMessages.h typed UMP status/attribute enums are not exposed. |
-| `MIDISystemStatus` | enum | `MIDIMessages.h` | MIDIMessages.h typed UMP status/attribute enums are not exposed. |
-| `MIDIUtilityStatus` | enum | `MIDIMessages.h` | MIDIMessages.h typed UMP status/attribute enums are not exposed. |
-| `UMPStreamMessageFormat` | enum | `MIDIMessages.h` | MIDIMessages.h typed UMP status/attribute enums are not exposed. |
-| `UMPStreamMessageStatus` | enum | `MIDIMessages.h` | MIDIMessages.h typed UMP status/attribute enums are not exposed. |
-| `MIDICIManagementMessageType` | enum | `MIDIUMPCI.h` | Typed MIDI-CI management sub-ID enums are not exposed. |
-| `MIDICIProcessInquiryMessageType` | enum | `MIDIUMPCI.h` | Typed MIDI-CI process-inquiry sub-ID enums are not exposed. |
-| `MIDICIProfileMessageType` | enum | `MIDIUMPCI.h` | Typed MIDI-CI profile message sub-ID enums are not exposed. |
-| `MIDICIPropertyExchangeMessageType` | enum | `MIDIUMPCI.h` | Typed MIDI-CI property-exchange sub-ID enums are not exposed. |
-| `MIDIUMPEndpointObjectKey` | const | `MIDIUMPEndpointManager.h` | MIDIUMPEndpointManager userInfo dictionary keys are not surfaced. |
-| `MIDIUMPEndpointWasAddedNotification` | const | `MIDIUMPEndpointManager.h` | MIDIUMPEndpointManager notifications are not surfaced. |
-| `MIDIUMPEndpointWasRemovedNotification` | const | `MIDIUMPEndpointManager.h` | MIDIUMPEndpointManager notifications are not surfaced. |
-| `MIDIUMPEndpointWasUpdatedNotification` | const | `MIDIUMPEndpointManager.h` | MIDIUMPEndpointManager notifications are not surfaced. |
-| `MIDIUMPFunctionBlockObjectKey` | const | `MIDIUMPEndpointManager.h` | MIDIUMPEndpointManager userInfo dictionary keys are not surfaced. |
-| `MIDIUMPFunctionBlockWasUpdatedNotification` | const | `MIDIUMPEndpointManager.h` | MIDIUMPEndpointManager notifications are not surfaced. |
+None.
 
 ## ⏭️ EXEMPT
 | Symbol | Kind | Header | Reason | SDK attribute |

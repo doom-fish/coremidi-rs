@@ -2,14 +2,14 @@
 
 Safe Rust bindings for Apple's [CoreMIDI](https://developer.apple.com/documentation/coremidi) framework on macOS. The published Cargo package is `coremidi-rs`; the Rust library target is `coremidi`.
 
-> **Status:** v0.2.0 expands the crate from basic client/port I/O to a multi-area CoreMIDI surface covering clients, endpoints, ports, packets / event lists, notifications, networking, properties, drivers, thru connections, setup APIs, and MIDI-CI / UMP capability snapshots.
+> **Status:** v0.2.1 completes the current CoreMIDI audit by adding MIDICIDeviceManager / MIDIUMPEndpointManager constants, typed UMP helper enums / structs, and MIDI-CI profile-state / message-type wrappers on top of the broader multi-area CoreMIDI surface.
 
 ## Highlights
 
 - Safe Rust wrappers for the practical CoreMIDI API surface.
 - Swift bridge for ObjC-only and modern APIs such as network sessions, UMP endpoint snapshots, and MIDI-CI discovery.
 - Raw CoreMIDI / CoreFoundation C symbols behind the `raw-ffi` Cargo feature.
-- Examples and tests for every logical area requested in the v0.2.0 expansion.
+- Examples and tests for every logical area requested in the v0.2.1 surface, including the remaining MIDI-CI / UMP audit closures.
 - Header-audit coverage test and `COVERAGE.md` for tracking SDK parity.
 
 ## Modules by area
@@ -17,16 +17,16 @@ Safe Rust bindings for Apple's [CoreMIDI](https://developer.apple.com/documentat
 | Area | Rust module | Notes |
 | --- | --- | --- |
 | Client | `coremidi::client` | `MidiClient`, notification-capable clients, restart |
-| Endpoint | `coremidi::endpoint` | devices, entities, endpoints, virtual endpoints, UMP snapshots |
+| Endpoint | `coremidi::endpoint` | devices, entities, endpoints, virtual endpoints, UMP snapshots, manager constants |
 | Port | `coremidi::port` | input/output ports, protocol callbacks, flush |
-| Packet / EventList | `coremidi::packet` | `PacketListBuffer`, `EventListBuffer`, iterators |
+| Packet / EventList | `coremidi::packet` | `PacketListBuffer`, `EventListBuffer`, typed UMP enums / fixed-width helpers |
 | Notification | `coremidi::notification` | typed CoreMIDI notification decoding |
 | Network | `coremidi::network` | `MIDINetworkSession`, contacts, connections, BLE MIDI helpers |
 | Property | `coremidi::property` | typed object/property helpers, lookup by unique ID |
 | Driver | `coremidi::driver` | driver interface identifiers, driver-owned devices |
 | ThruConnection | `coremidi::thru_connection` | parameter round-tripping and connection management |
 | Setup | `coremidi::setup` | setup XML, serial-port driver queries, device/entity setup |
-| Capability | `coremidi::capability` | MIDI-CI discovery snapshots and legacy profile helper |
+| Capability | `coremidi::capability` | MIDI-CI discovery snapshots, manager constants, message-type enums, and legacy profile/state helpers |
 
 ## `raw-ffi` feature
 
@@ -34,7 +34,7 @@ By default, the crate exposes safe wrappers and raw CoreMIDI data types. To expo
 
 ```toml
 [dependencies]
-coremidi-rs = { version = "0.2.0", features = ["raw-ffi"] }
+coremidi-rs = { version = "0.2.1", features = ["raw-ffi"] }
 ```
 
 Without `raw-ffi`, the raw function declarations stay crate-private and back the safe APIs.

@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.1] - 2026-05-16
+
+### Added
+
+- `capability::ci_device_manager_constants`, `CiDeviceManagerConstants`, `CiProfileState`, and `CiProfileStateInfo` to surface MIDICIDeviceManager notifications / user-info keys plus per-channel legacy MIDI-CI profile-state snapshots.
+- Typed MIDI-CI message sub-ID enums: `CiManagementMessageType`, `CiProcessInquiryMessageType`, `CiProfileMessageType`, and `CiPropertyExchangeMessageType`.
+- `endpoint::UmpEndpointManager::constants` and `UmpEndpointManagerConstants` for MIDIUMPEndpointManager notifications / user-info keys.
+- Typed UMP helper surface in `packet`: `MidiMessageType`, `MidiCvStatus`, `MidiSystemStatus`, `MidiSysExStatus`, `MidiUtilityStatus`, `UmpStreamMessageFormat`, `UmpStreamMessageStatus`, `MidiNoteAttribute`, `MidiProgramChangeOptions`, `MidiPerNoteManagementOptions`, and fixed-width `MidiMessage64` / `MidiMessage96` / `MidiMessage128` wrappers backed by raw `ffi::MIDIMessage_*` structs.
+
+### Changed
+
+- Closed all 30 remaining `COVERAGE_AUDIT.md` gaps and raised the tracked SDK coverage from 85.44% to 100.00%.
+- Refreshed the README, examples, tests, and coverage docs for the expanded v0.2.1 surface.
+
 ## [0.2.0] - 2026-05-16
 
 ### Added

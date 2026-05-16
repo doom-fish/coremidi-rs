@@ -13,6 +13,7 @@ use crate::private;
 use crate::property::MidiObject;
 
 extern "C" {
+    fn cmr_ump_endpoint_manager_constants_json() -> *mut c_char;
     fn cmr_ump_endpoint_manager_endpoints_json() -> *mut c_char;
     fn cmr_ump_device_info_new(
         manufacturer1: u8,
@@ -581,9 +582,24 @@ pub struct UmpEndpointInfo {
     pub function_blocks: Vec<UmpFunctionBlockInfo>,
 }
 
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub struct UmpEndpointManagerConstants {
+    pub endpoint_added_notification: String,
+    pub endpoint_removed_notification: String,
+    pub endpoint_updated_notification: String,
+    pub function_block_updated_notification: String,
+    pub endpoint_object_key: String,
+    pub function_block_object_key: String,
+}
+
 pub struct UmpEndpointManager;
 
 impl UmpEndpointManager {
+    pub fn constants() -> MidiResult<UmpEndpointManagerConstants> {
+        unsafe { private::take_json(cmr_ump_endpoint_manager_constants_json()) }
+    }
+
     pub fn endpoints() -> MidiResult<Vec<UmpEndpointInfo>> {
         unsafe { private::take_json(cmr_ump_endpoint_manager_endpoints_json()) }
     }

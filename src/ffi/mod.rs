@@ -229,6 +229,30 @@ pub struct MIDIUniversalMessage {
 }
 
 #[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MIDIMessage_64 {
+    pub word0: u32,
+    pub word1: u32,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MIDIMessage_96 {
+    pub word0: u32,
+    pub word1: u32,
+    pub word2: u32,
+}
+
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MIDIMessage_128 {
+    pub word0: u32,
+    pub word1: u32,
+    pub word2: u32,
+    pub word3: u32,
+}
+
+#[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct MIDISysexSendRequest {
     pub destination: MIDIEndpointRef,

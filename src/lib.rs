@@ -42,7 +42,12 @@ pub mod setup;
 pub mod thru_connection;
 pub(crate) mod private;
 
-pub use capability::{discovered_ci_devices, legacy_ci_profile, CiDeviceInfo, CiProfileInfo, LegacyCiProfileInfo};
+pub use capability::{
+    ci_device_manager_constants, discovered_ci_devices, legacy_ci_profile, CiDeviceInfo,
+    CiDeviceManagerConstants, CiManagementMessageType, CiProcessInquiryMessageType,
+    CiProfileInfo, CiProfileMessageType, CiProfileState, CiProfileStateInfo,
+    CiPropertyExchangeMessageType, LegacyCiProfileInfo,
+};
 pub use client::MidiClient;
 pub use driver::{driver_interface_ids, driver_io_run_loop_available, DriverInterfaceIds, DriverOwnedDevice};
 pub use endpoint::{
@@ -50,7 +55,7 @@ pub use endpoint::{
     external_device_count, external_devices, source, source_count, sources, Midi2DeviceInfo,
     Midi2DeviceInfoHandle, MidiDevice, MidiDeviceIter, MidiEndpoint, MidiEndpointIter, MidiEntity,
     MutableUmpEndpoint, MutableUmpFunctionBlock, UmpEndpointInfo, UmpEndpointManager,
-    UmpFunctionBlockInfo, VirtualDestination, VirtualSource,
+    UmpEndpointManagerConstants, UmpFunctionBlockInfo, VirtualDestination, VirtualSource,
 };
 pub use error::{MidiError, MidiResult, MidiStatus};
 pub use ffi::{
@@ -63,8 +68,11 @@ pub use network::{
 };
 pub use notification::{Notification, NotificationMessageId};
 pub use packet::{
-    EventIter, EventListBuffer, EventListRef, MidiEventPacketRef, MidiPacketRef, MidiProtocol,
-    PacketIter, PacketListBuffer, PacketListRef,
+    EventIter, EventListBuffer, EventListRef, MidiCvStatus, MidiEventPacketRef, MidiMessage128,
+    MidiMessage64, MidiMessage96, MidiMessageType, MidiNoteAttribute,
+    MidiPerNoteManagementOptions, MidiPacketRef, MidiProgramChangeOptions, MidiProtocol,
+    MidiSysExStatus, MidiSystemStatus, MidiUtilityStatus, PacketIter, PacketListBuffer,
+    PacketListRef, UmpStreamMessageFormat, UmpStreamMessageStatus,
 };
 pub use port::{flush_output, MidiInputPort, MidiOutputPort, MidiProtocolReadProc};
 pub use property::{object_find_by_unique_id, MidiObject, MidiObjectType, MidiProperty, ResolvedMidiObject};

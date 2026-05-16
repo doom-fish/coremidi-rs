@@ -1,22 +1,22 @@
-# CoreMIDI SDK coverage (v0.2.0)
+# CoreMIDI SDK coverage (v0.2.1)
 
-This crate follows the v0.2.0 “100% Apple SDK coverage” playbook by splitting the CoreMIDI surface into logical areas, pairing each area with a Rust module, Swift bridge file when needed, an example, and an integration test.
+This crate follows the v0.2.1 “100% Apple SDK coverage” playbook by splitting the CoreMIDI surface into logical areas, pairing each area with a Rust module, Swift bridge file when needed, an example, and an integration test.
 
 ## Logical-area coverage
 
 | Area | Rust module | Swift bridge | Example | Test | Coverage notes |
 | --- | --- | --- | --- | --- | --- |
 | Client | `src/client.rs` | `Client.swift` | `examples/client_overview.rs` | `tests/client_area.rs` | Client creation, notification clients, restart |
-| Endpoint | `src/endpoint.rs` | `Endpoint.swift` | `examples/endpoint_snapshot.rs` | `tests/endpoint_area.rs` | devices, entities, endpoints, virtual endpoints, UMP snapshots |
+| Endpoint | `src/endpoint.rs` | `Endpoint.swift` | `examples/endpoint_snapshot.rs` | `tests/endpoint_area.rs` | devices, entities, endpoints, virtual endpoints, UMP snapshots, manager constants |
 | Port | `src/port.rs` | `Port.swift` | `examples/port_create.rs` | `tests/port_area.rs` | input/output ports, protocol receive callbacks, flush |
-| Packet / EventList | `src/packet.rs` | `PacketEventList.swift` | `examples/packet_buffers.rs` | `tests/packet_area.rs` | `MIDIPacketList`, `MIDIEventList`, iterators, MIDI 1.0 / 2.0 buffers |
+| Packet / EventList | `src/packet.rs` | `PacketEventList.swift` | `examples/packet_buffers.rs` | `tests/packet_area.rs` | `MIDIPacketList`, `MIDIEventList`, iterators, typed UMP enums, fixed-width helper structs |
 | Notification | `src/notification.rs` | `Notification.swift` | `examples/notification_decode.rs` | `tests/notification_area.rs` | typed notification decoding from raw pointers and bridge JSON |
 | Network | `src/network.rs` | `Network.swift` | `examples/network_session.rs` | `tests/network_area.rs` | `MIDINetworkSession`, hosts, connections, BLE MIDI helpers |
 | Property | `src/property.rs` | `Property.swift` | `examples/property_lookup.rs` | `tests/property_area.rs` | string/int/data/dictionary/property-list getters/setters, lookup by unique ID |
 | Driver | `src/driver.rs` | `Driver.swift` | `examples/driver_metadata.rs` | `tests/driver_area.rs` | driver interface IDs, driver-owned device helpers |
 | ThruConnection | `src/thru_connection.rs` | `ThruConnection.swift` | `examples/thru_roundtrip.rs` | `tests/thru_connection_area.rs` | params initialize / serialize / deserialize / create / find |
 | Setup | `src/setup.rs` | `Setup.swift` | `examples/setup_snapshot.rs` | `tests/setup_area.rs` | setup XML, serial-port ownership / drivers, device/entity setup APIs |
-| Capability | `src/capability.rs` | `Capability.swift` | `examples/capability_snapshot.rs` | `tests/capability_area.rs` | MIDI-CI discovery snapshots plus legacy profile helper |
+| Capability | `src/capability.rs` | `Capability.swift` | `examples/capability_snapshot.rs` | `tests/capability_area.rs` | MIDI-CI discovery snapshots, manager constants, message-type enums, and legacy profile/state helpers |
 
 ## Header / framework mapping
 
@@ -44,6 +44,6 @@ This crate follows the v0.2.0 “100% Apple SDK coverage” playbook by splittin
 
 ## Notes
 
-- ObjC-only APIs (for example `MIDINetworkSession`, UMP endpoint manager classes, and modern MIDI-CI discovery objects) are bridged through Swift rather than exposed as raw Rust FFI.
+- ObjC-only APIs (for example `MIDINetworkSession`, `MIDICIDeviceManager`, `MIDIUMPEndpointManager`, and modern MIDI-CI discovery/profile objects) are bridged through Swift rather than exposed as raw Rust FFI.
 - Some legacy setup / serial-port APIs are deprecated by Apple and can still report runtime status errors on current systems even though the symbols are bound and wrapped.
 - Inline helper behavior is covered by Rust-side helpers such as `MIDIPacketNext`, `MIDIEventPacketNext`, and `MIDIThruConnectionParams::to_bytes` / `from_bytes`.

@@ -59,7 +59,7 @@ pub(crate) unsafe fn swift_result(status: i32, error_ptr: *mut c_char) -> MidiRe
     Err(MidiError::Bridge(format!("CoreMIDI bridge returned status {status}")))
 }
 
-pub(crate) fn encode_json<T: Serialize>(value: &T) -> MidiResult<CString> {
+pub(crate) fn encode_json<T: Serialize + ?Sized>(value: &T) -> MidiResult<CString> {
     let json = serde_json::to_string(value)
         .map_err(|error| MidiError::Serialization(error.to_string()))?;
     to_cstring(&json)

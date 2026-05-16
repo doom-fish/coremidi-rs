@@ -137,6 +137,30 @@ private func cmrEndpointPayload(_ endpoint: MIDIUMPEndpoint) -> CMRUmpEndpointPa
     )
 }
 
+@_cdecl("cmr_ump_endpoint_manager_constants_json")
+public func cmr_ump_endpoint_manager_constants_json() -> UnsafeMutablePointer<CChar>? {
+    guard #available(macOS 15.0, *) else {
+        let unavailable: [String: String] = [
+            "endpoint_added_notification": "",
+            "endpoint_removed_notification": "",
+            "endpoint_updated_notification": "",
+            "function_block_updated_notification": "",
+            "endpoint_object_key": "",
+            "function_block_object_key": "",
+        ]
+        return cmrString(cmrJSONString(unavailable))
+    }
+    let payload: [String: String] = [
+        "endpoint_added_notification": MIDIUMPEndpointManager.endpointWasAddedNotification.rawValue,
+        "endpoint_removed_notification": MIDIUMPEndpointManager.endpointWasRemovedNotification.rawValue,
+        "endpoint_updated_notification": MIDIUMPEndpointManager.endpointWasUpdatedNotification.rawValue,
+        "function_block_updated_notification": MIDIUMPEndpointManager.functionBlockWasUpdatedNotification.rawValue,
+        "endpoint_object_key": MIDIUMPEndpointManager.DictionaryKey.endpointObject.rawValue,
+        "function_block_object_key": MIDIUMPEndpointManager.DictionaryKey.functionBlockObject.rawValue,
+    ]
+    return cmrString(cmrJSONString(payload))
+}
+
 @_cdecl("cmr_ump_endpoint_manager_endpoints_json")
 public func cmr_ump_endpoint_manager_endpoints_json() -> UnsafeMutablePointer<CChar>? {
     guard #available(macOS 15.0, *) else {

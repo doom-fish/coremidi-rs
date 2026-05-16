@@ -1,18 +1,43 @@
 # coremidi-rs
 
-Safe Rust bindings for Apple's [CoreMIDI](https://developer.apple.com/documentation/coremidi) framework — MIDI clients, ports, virtual endpoints, packets, and MIDI 2.0 event lists on macOS. The published Cargo package is `coremidi-rs`; the Rust library target is `coremidi`.
+Safe Rust bindings for Apple's [CoreMIDI](https://developer.apple.com/documentation/coremidi) framework on macOS. The published Cargo package is `coremidi-rs`; the Rust library target is `coremidi`.
 
-> **Status:** v0.1.0 ships the practical CoreMIDI surface for client setup, input/output ports, virtual sources and destinations, device/entity enumeration, property lookup, legacy `MIDIPacketList` sending, and MIDI 2.0 `MIDIEventList` construction.
+> **Status:** v0.2.0 expands the crate from basic client/port I/O to a multi-area CoreMIDI surface covering clients, endpoints, ports, packets / event lists, notifications, networking, properties, drivers, thru connections, setup APIs, and MIDI-CI / UMP capability snapshots.
 
 ## Highlights
 
-- `MidiClient`, `MidiInputPort`, `MidiOutputPort`, `VirtualSource`, `VirtualDestination`
-- Device / entity / endpoint enumeration via `devices()`, `MidiDevice::entities()`, `MidiEntity::source()`, and `MidiEntity::destination()`
-- Object property helpers for `name`, `manufacturer`, `model`, `unique_id`, plus generic `string_property` / `integer_property`
-- `PacketListBuffer` for safe `MIDIPacketListInit` / `MIDIPacketListAdd` packet construction
-- `EventListBuffer` for MIDI 2.0 `MIDIEventListInit` / `MIDIEventListAdd`
-- Raw CoreMIDI structs re-exported: `MIDIPacket`, `MIDIPacketList`, `MIDIEventPacket`, `MIDIEventList`, `MIDIUniversalMessage`
-- Direct C callbacks (`MIDIReadProc`) for receive paths — no Swift bridge required
+- Safe Rust wrappers for the practical CoreMIDI API surface.
+- Swift bridge for ObjC-only and modern APIs such as network sessions, UMP endpoint snapshots, and MIDI-CI discovery.
+- Raw CoreMIDI / CoreFoundation C symbols behind the `raw-ffi` Cargo feature.
+- Examples and tests for every logical area requested in the v0.2.0 expansion.
+- Header-audit coverage test and `COVERAGE.md` for tracking SDK parity.
+
+## Modules by area
+
+| Area | Rust module | Notes |
+| --- | --- | --- |
+| Client | `coremidi::client` | `MidiClient`, notification-capable clients, restart |
+| Endpoint | `coremidi::endpoint` | devices, entities, endpoints, virtual endpoints, UMP snapshots |
+| Port | `coremidi::port` | input/output ports, protocol callbacks, flush |
+| Packet / EventList | `coremidi::packet` | `PacketListBuffer`, `EventListBuffer`, iterators |
+| Notification | `coremidi::notification` | typed CoreMIDI notification decoding |
+| Network | `coremidi::network` | `MIDINetworkSession`, contacts, connections, BLE MIDI helpers |
+| Property | `coremidi::property` | typed object/property helpers, lookup by unique ID |
+| Driver | `coremidi::driver` | driver interface identifiers, driver-owned devices |
+| ThruConnection | `coremidi::thru_connection` | parameter round-tripping and connection management |
+| Setup | `coremidi::setup` | setup XML, serial-port driver queries, device/entity setup |
+| Capability | `coremidi::capability` | MIDI-CI discovery snapshots and legacy profile helper |
+
+## `raw-ffi` feature
+
+By default, the crate exposes safe wrappers and raw CoreMIDI data types. To expose the raw C function symbols publicly, enable:
+
+```toml
+[dependencies]
+coremidi-rs = { version = "0.2.0", features = ["raw-ffi"] }
+```
+
+Without `raw-ffi`, the raw function declarations stay crate-private and back the safe APIs.
 
 ## Quick start
 
@@ -33,47 +58,39 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut packets = PacketListBuffer::with_capacity(1024);
     packets.add_packet(1, &[0x90, 60, 100])?;
+
     output.send(destination.endpoint(), &packets)?;
     source.received(&packets)?;
     Ok(())
 }
 ```
 
-## Surface overview
+## Examples
 
-### Client + port management
+- `cargo run --example 01_loopback_smoke`
+- `cargo run --example client_overview`
+- `cargo run --example endpoint_snapshot`
+- `cargo run --example port_create`
+- `cargo run --example packet_buffers`
+- `cargo run --example notification_decode`
+- `cargo run --example network_session`
+- `cargo run --example property_lookup`
+- `cargo run --example driver_metadata`
+- `cargo run --example thru_roundtrip`
+- `cargo run --example setup_snapshot`
+- `cargo run --example capability_snapshot`
 
-- `MidiClient::new`, `MidiClient::with_notify`
-- `MidiClient::input_port`, `MidiClient::input_port_with_protocol`, `MidiClient::output_port`
-- `MidiClient::virtual_source`, `MidiClient::virtual_destination`
-- `MidiInputPort::connect_source`, `connect_source_with_protocol_callback`, `disconnect_source`
-- `MidiOutputPort::send`, `send_event_list`
-- `VirtualSource::received`, `received_event_list`
-
-### Enumeration + properties
-
-- `device_count`, `device`, `devices`
-- `MidiDevice::entity_count`, `entity`, `entities`
-- `MidiEntity::source_count`, `source`, `destination_count`, `destination`
-- `MidiObject::string_property`, `integer_property`, `name`, `manufacturer`, `model`, `unique_id`
-
-### Packet construction
-
-- `PacketListBuffer::with_capacity`, `add_packet`, `clear`
-- `PacketListRef::iter`
-- `EventListBuffer::with_capacity`, `add_packet_words`, `clear`
-- `EventListRef::iter`
-- Raw structs: `MIDIPacket`, `MIDIPacketList`, `MIDIEventPacket`, `MIDIEventList`, `MIDIUniversalMessage`
-
-## Smoke example
-
-Run the CoreMIDI loopback smoke example with:
+## Validation
 
 ```bash
-cargo run --example 01_loopback_smoke
+cargo clippy --all-targets -- -D warnings
+cargo test
 ```
 
-It creates a client, a virtual source, a virtual destination, and an input/output loopback path. A Middle-C Note On packet is injected into the virtual source, forwarded to the virtual destination, and verified from the destination callback before printing `✅ coremidi loopback OK`.
+## Notes
+
+- Some legacy setup / serial-port APIs are deprecated by Apple and may return framework status errors on modern systems even though the symbols remain bound.
+- Modern UMP / MIDI-CI objects are availability-gated by macOS and return empty snapshots or framework errors when unavailable.
 
 ## License
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.0] - 2026-05-16
+
+### Added
+
+- Swift bridge build pipeline for CoreMIDI, including Swift-backed client notifications, network session access, UMP endpoint snapshots, thru-connection helpers, and MIDI-CI discovery helpers.
+- New logical-area modules: `endpoint`, `port`, `notification`, `network`, `property`, `driver`, `thru_connection`, `setup`, and `capability`.
+- Expanded safe wrappers for system and external device enumeration, property setters/getters, unique-ID lookup, driver-owned devices, setup/device/entity management, and thru-connection parameter round-tripping.
+- Modern UMP helpers: `Midi2DeviceInfoHandle`, `MutableUmpFunctionBlock`, `MutableUmpEndpoint`, and `UmpEndpointManager` snapshots.
+- Capability helpers for discovered MIDI-CI devices and legacy profile decoding.
+- `raw-ffi` feature to publicly expose the raw CoreMIDI C function surface while keeping those declarations crate-private by default.
+- One example and one integration test for each requested logical area, plus an expanded `tests/api_coverage.rs` header-audit test.
+- `COVERAGE.md` documenting the v0.2.0 SDK coverage strategy and header mapping.
+
+### Changed
+
+- Reworked the public crate exports around logical-area modules instead of the original v0.1-only layout.
+- Updated the README, examples, and tests to reflect the v0.2.0 surface.
+
 ## [0.1.0] - 2026-05-16
 
 ### Added

@@ -1,3 +1,5 @@
+#![allow(clippy::missing_const_for_fn)]
+
 use std::error::Error;
 use std::ffi::c_void;
 use std::sync::Mutex;
@@ -10,8 +12,8 @@ use coremidi::prelude::*;
 
 #[derive(Clone, Copy)]
 struct Route {
-    output_port: ffi::MIDIPortRef,
-    destination: ffi::MIDIEndpointRef,
+    output: &'static MidiOutputPort,
+    destination: MidiEndpoint,
 }
 
 static ROUTE: Mutex<Option<Route>> = Mutex::new(None);
@@ -24,7 +26,17 @@ unsafe extern "C" fn source_input_callback(
 ) {
     let route = *ROUTE.lock().expect("route mutex poisoned");
     if let Some(route) = route {
-        let _ = ffi::MIDISend(route.output_port, route.destination, packet_list);
+        let packet_list = PacketListRef::from_ptr(packet_list);
+        let mut forwarded = PacketListBuffer::with_capacity(1024);
+        for packet in packet_list.iter() {
+            forwarded
+                .add_packet(packet.timestamp(), packet.bytes())
+                .expect("forwarded packet list must fit in example buffer");
+        }
+        route
+            .output
+            .send(route.destination, &forwarded)
+            .expect("example route send must succeed");
     }
 }
 
@@ -53,7 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             std::ptr::null_mut(),
         )?
     };
-    let output = client.output_port("coremidi smoke output")?;
+    let output = Box::leak(Box::new(client.output_port("coremidi smoke output")?));
     let input = unsafe {
         client.input_port(
             "coremidi smoke input",
@@ -63,8 +75,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
 
     *ROUTE.lock().expect("route mutex poisoned") = Some(Route {
-        output_port: output.raw(),
-        destination: destination.raw(),
+        output,
+        destination: destination.endpoint(),
     });
 
     unsafe {

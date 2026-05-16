@@ -1,7 +1,7 @@
 #![allow(clippy::cast_precision_loss)]
 
 use std::collections::BTreeSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 fn sdk_root() -> PathBuf {
@@ -13,7 +13,7 @@ fn sdk_root() -> PathBuf {
     PathBuf::from(String::from_utf8(output.stdout).unwrap().trim().to_string())
 }
 
-fn extract_header_symbols(path: &PathBuf) -> BTreeSet<String> {
+fn extract_header_symbols(path: &Path) -> BTreeSet<String> {
     let contents = std::fs::read_to_string(path)
         .unwrap_or_else(|error| panic!("can't read {}: {error}", path.display()));
     let regex = regex_lite::Regex::new(r"\b(MIDI[A-Za-z0-9_]+)\s*\(").unwrap();
@@ -23,10 +23,28 @@ fn extract_header_symbols(path: &PathBuf) -> BTreeSet<String> {
         .collect()
 }
 
+fn extract_sdk_symbols(sdk_root: &Path) -> BTreeSet<String> {
+    let header_root = sdk_root.join("System/Library/Frameworks/CoreMIDI.framework/Headers");
+    [
+        "MIDIServices.h",
+        "MIDISetup.h",
+        "MIDIDriver.h",
+        "MIDIThruConnection.h",
+        "MIDIBluetoothConnection.h",
+    ]
+    .into_iter()
+    .map(|header| extract_header_symbols(&header_root.join(header)))
+    .fold(BTreeSet::new(), |mut all, symbols| {
+        all.extend(symbols);
+        all
+    })
+}
+
 fn extract_rust_symbols() -> BTreeSet<String> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/ffi/mod.rs");
     let contents = std::fs::read_to_string(path).expect("ffi source must be readable");
-    let regex = regex_lite::Regex::new(r"pub\s+fn\s+(MIDI[A-Za-z0-9_]+)\s*\(").unwrap();
+    let regex =
+        regex_lite::Regex::new(r"pub(?:\(crate\))?\s+fn\s+(MIDI[A-Za-z0-9_]+)\s*\(").unwrap();
     regex
         .captures_iter(&contents)
         .map(|capture| capture[1].to_string())
@@ -64,6 +82,13 @@ fn required_symbols() -> BTreeSet<String> {
         "MIDIEventListAdd",
         "MIDISendEventList",
         "MIDIReceivedEventList",
+        "MIDIExternalDeviceCreate",
+        "MIDISetupAddExternalDevice",
+        "MIDISetupRemoveExternalDevice",
+        "MIDIThruConnectionCreate",
+        "MIDIThruConnectionGetParams",
+        "MIDIThruConnectionSetParams",
+        "MIDIThruConnectionFind",
     ]
     .into_iter()
     .map(String::from)
@@ -73,15 +98,14 @@ fn required_symbols() -> BTreeSet<String> {
 #[test]
 fn coremidi_symbol_audit() {
     let sdk = sdk_root();
-    let header = sdk.join("System/Library/Frameworks/CoreMIDI.framework/Headers/MIDIServices.h");
-    let apple = extract_header_symbols(&header);
+    let apple = extract_sdk_symbols(&sdk);
     let ours = extract_rust_symbols();
     let required = required_symbols();
 
     for symbol in &required {
         assert!(
             apple.contains(symbol),
-            "Apple header missing expected symbol {symbol}"
+            "Apple SDK headers missing expected symbol {symbol}"
         );
         assert!(
             ours.contains(symbol),
@@ -96,8 +120,7 @@ fn coremidi_symbol_audit() {
     );
 
     println!(
-        "wrapped {} CoreMIDI symbols ({} required for v0.1)",
+        "wrapped {} CoreMIDI C symbols across MIDIServices/MIDISetup/MIDIDriver/MIDIThruConnection/MIDIBluetoothConnection",
         ours.len(),
-        required.len()
     );
 }

@@ -9,6 +9,8 @@ pub type MidiResult<T> = Result<T, MidiError>;
 pub enum MidiError {
     InvalidArgument(String),
     CoreFoundation(String),
+    Bridge(String),
+    Serialization(String),
     BufferTooSmall { requested: usize, available: usize },
     Unsupported(String),
     Status(MidiStatus),
@@ -19,6 +21,8 @@ impl fmt::Display for MidiError {
         match self {
             Self::InvalidArgument(message) => write!(f, "invalid argument: {message}"),
             Self::CoreFoundation(message) => write!(f, "CoreFoundation error: {message}"),
+            Self::Bridge(message) => write!(f, "CoreMIDI bridge error: {message}"),
+            Self::Serialization(message) => write!(f, "serialization error: {message}"),
             Self::BufferTooSmall {
                 requested,
                 available,

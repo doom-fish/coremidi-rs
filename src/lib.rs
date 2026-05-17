@@ -41,12 +41,19 @@ pub mod property;
 pub mod setup;
 pub mod thru_connection;
 pub(crate) mod private;
+#[cfg(feature = "async")]
+pub mod async_api;
 
 pub use capability::{
     ci_device_manager_constants, discovered_ci_devices, legacy_ci_profile, CiDeviceInfo,
     CiDeviceManagerConstants, CiManagementMessageType, CiProcessInquiryMessageType,
     CiProfileInfo, CiProfileMessageType, CiProfileState, CiProfileStateInfo,
     CiPropertyExchangeMessageType, LegacyCiProfileInfo,
+};
+#[cfg(feature = "async")]
+pub use crate::async_api::{
+    MidiClientNotificationStream, MidiCIDiscoveryStream, MidiEventStream,
+    MidiVirtualDestinationStream, MidiThruConnectionStream, OwnedEventList,
 };
 pub use client::MidiClient;
 pub use driver::{driver_interface_ids, driver_io_run_loop_available, DriverInterfaceIds, DriverOwnedDevice};
@@ -96,5 +103,11 @@ pub mod prelude {
         MidiProperty, MidiProtocol, MidiProtocolReadProc, MidiResult, MidiStatus,
         Notification, NotificationMessageId, PacketListBuffer, PacketListRef, VirtualDestination,
         VirtualSource,
+    };
+
+    #[cfg(feature = "async")]
+    pub use crate::{
+        MidiClientNotificationStream, MidiCIDiscoveryStream, MidiEventStream,
+        MidiVirtualDestinationStream, MidiThruConnectionStream, OwnedEventList,
     };
 }

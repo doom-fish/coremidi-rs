@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple's [CoreMIDI](https://developer.apple.com/documentation/coremidi) framework on macOS. The published Cargo package is `coremidi-rs`; the Rust library target is `coremidi`.
 
-> **Status:** v0.2.1 completes the current CoreMIDI audit by adding MIDICIDeviceManager / MIDIUMPEndpointManager constants, typed UMP helper enums / structs, and MIDI-CI profile-state / message-type wrappers on top of the broader multi-area CoreMIDI surface.
+> **Status:** v0.3.0 adds an executor-agnostic async stream layer on top of the audited CoreMIDI surface, alongside the existing MIDI-CI, UMP, notification, setup, network, and thru-connection wrappers.
 
 ## Highlights
 
@@ -34,7 +34,7 @@ By default, the crate exposes safe wrappers and raw CoreMIDI data types. To expo
 
 ```toml
 [dependencies]
-coremidi-rs = { version = "0.2.1", features = ["raw-ffi"] }
+coremidi-rs = { version = "0.3.0", features = ["raw-ffi"] }
 ```
 
 Without `raw-ffi`, the raw function declarations stay crate-private and back the safe APIs.
@@ -65,6 +65,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
+## Async API
+
+Enable the `async` feature to get executor-agnostic event streams backed by
+[`doom-fish-utils`](https://github.com/doom-fish/doom-fish-utils):
+
+```toml
+[dependencies]
+coremidi-rs = { version = "0.3", features = ["async"] }
+```
+
+| Stream type | Item | Source |
+|---|---|---|
+| `MidiEventStream` | `OwnedEventList` | `MIDIInputPortCreateWithProtocol` receive block |
+| `MidiVirtualDestinationStream` | `OwnedEventList` | `MIDIDestinationCreateWithProtocol` receive block |
+| `MidiClientNotificationStream` | `Notification` | `MIDIClientCreateWithBlock` notification block |
+| `MidiCIDiscoveryStream` | `Vec<CiDeviceInfo>` | `MIDICIDeviceManager` KVO (macOS 15+ in the current SDK) |
+| `MidiThruConnectionStream` | `()` | `ThruConnectionsChanged` notification |
+
 ## Examples
 
 - `cargo run --example 01_loopback_smoke`
@@ -79,6 +97,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 - `cargo run --example thru_roundtrip`
 - `cargo run --example setup_snapshot`
 - `cargo run --example capability_snapshot`
+- `cargo run --example 14_async_streams --features async`
 
 ## Validation
 

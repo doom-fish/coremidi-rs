@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0] - 2026-05-17
+
+### Added
+
+- `async` Cargo feature gate backed by `doom-fish-utils::stream::BoundedAsyncStream<T>`.
+- `async_api` module with 5 executor-agnostic stream surfaces:
+  - `MidiEventStream` — async `OwnedEventList` stream from `MIDIInputPortCreateWithProtocol` receive block.
+  - `MidiVirtualDestinationStream` — async `OwnedEventList` stream from `MIDIDestinationCreateWithProtocol`.
+  - `MidiClientNotificationStream` — async `Notification` stream from `MIDIClientCreateWithBlock` notifications.
+  - `MidiCIDiscoveryStream` — async `Vec<CiDeviceInfo>` stream from `MIDICIDeviceManager` KVO (macOS 15+ in the current SDK; `subscribe()` returns `None` on older systems).
+  - `MidiThruConnectionStream` — async `()` stream that fires on each `ThruConnectionsChanged` notification.
+- `OwnedEventList` value type (protocol + batched `Vec<MIDIEventPacket>`) to preserve bulk-buffer semantics.
+- `swift-bridge/Sources/CoreMIDIBridge/AsyncStream.swift` with Swift thunks for virtual destination and CI discovery streams.
+- Example `examples/14_async_streams.rs` and integration tests `tests/async_stream_tests.rs`.
+
 ## [0.2.1] - 2026-05-16
 
 ### Added

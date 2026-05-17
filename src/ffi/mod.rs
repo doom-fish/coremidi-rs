@@ -192,7 +192,7 @@ pub struct MIDIIOErrorNotification {
 }
 
 #[repr(C, packed(4))]
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct MIDIEventPacket {
     pub timeStamp: MIDITimeStamp,
     pub wordCount: u32,

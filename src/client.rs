@@ -192,7 +192,10 @@ impl MidiObject for MidiClient {
     }
 }
 
-unsafe extern "C" fn notification_callback_trampoline(user_info: *mut c_void, payload_json: *const c_char) {
+unsafe extern "C" fn notification_callback_trampoline(
+    user_info: *mut c_void,
+    payload_json: *const c_char,
+) {
     let _ = catch_unwind(AssertUnwindSafe(|| {
         if user_info.is_null() || payload_json.is_null() {
             return;
@@ -207,4 +210,3 @@ unsafe extern "C" fn notification_callback_trampoline(user_info: *mut c_void, pa
         }
     }));
 }
-

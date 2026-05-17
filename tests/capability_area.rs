@@ -9,9 +9,15 @@ fn capability_area_snapshot_calls_work() -> coremidi::MidiResult<()> {
     assert!(discovered_ci_devices().is_ok());
 
     let constants = ci_device_manager_constants()?;
-    assert!(constants.device_object_key.is_empty() || constants.device_object_key.contains("MIDICIDevice"));
+    assert!(
+        constants.device_object_key.is_empty()
+            || constants.device_object_key.contains("MIDICIDevice")
+    );
     assert_eq!(CiManagementMessageType::Discovery.as_raw(), 0x70);
-    assert_eq!(CiProcessInquiryMessageType::InquiryMidiMessageReport.as_raw(), 0x42);
+    assert_eq!(
+        CiProcessInquiryMessageType::InquiryMidiMessageReport.as_raw(),
+        0x42
+    );
     assert_eq!(CiProfileMessageType::ProfileInquiry.as_raw(), 0x20);
     assert_eq!(CiPropertyExchangeMessageType::Notify.as_raw(), 0x3F);
 

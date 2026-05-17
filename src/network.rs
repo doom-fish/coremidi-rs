@@ -16,13 +16,28 @@ extern "C" {
     fn cmr_network_session_network_name() -> *mut c_char;
     fn cmr_network_session_local_name() -> *mut c_char;
     fn cmr_network_session_connection_policy() -> i32;
-    fn cmr_network_session_set_connection_policy(raw_value: i32, error_out: *mut *mut c_char) -> i32;
+    fn cmr_network_session_set_connection_policy(
+        raw_value: i32,
+        error_out: *mut *mut c_char,
+    ) -> i32;
     fn cmr_network_session_contacts_json() -> *mut c_char;
-    fn cmr_network_session_add_contact_json(json: *const c_char, error_out: *mut *mut c_char) -> i32;
-    fn cmr_network_session_remove_contact_json(json: *const c_char, error_out: *mut *mut c_char) -> i32;
+    fn cmr_network_session_add_contact_json(
+        json: *const c_char,
+        error_out: *mut *mut c_char,
+    ) -> i32;
+    fn cmr_network_session_remove_contact_json(
+        json: *const c_char,
+        error_out: *mut *mut c_char,
+    ) -> i32;
     fn cmr_network_session_connections_json() -> *mut c_char;
-    fn cmr_network_session_add_connection_json(json: *const c_char, error_out: *mut *mut c_char) -> i32;
-    fn cmr_network_session_remove_connection_json(json: *const c_char, error_out: *mut *mut c_char) -> i32;
+    fn cmr_network_session_add_connection_json(
+        json: *const c_char,
+        error_out: *mut *mut c_char,
+    ) -> i32;
+    fn cmr_network_session_remove_connection_json(
+        json: *const c_char,
+        error_out: *mut *mut c_char,
+    ) -> i32;
     fn cmr_network_session_source_endpoint() -> ffi::MIDIEndpointRef;
     fn cmr_network_session_destination_endpoint() -> ffi::MIDIEndpointRef;
     fn cmr_network_activate_bluetooth_connections(error_out: *mut *mut c_char) -> i32;
@@ -164,7 +179,12 @@ impl NetworkSession {
     pub fn add_contact(self, host: &NetworkHost) -> MidiResult<()> {
         let payload = private::encode_json(host)?;
         let mut error = ptr::null_mut();
-        unsafe { private::swift_result(cmr_network_session_add_contact_json(payload.as_ptr(), &mut error), error) }
+        unsafe {
+            private::swift_result(
+                cmr_network_session_add_contact_json(payload.as_ptr(), &mut error),
+                error,
+            )
+        }
     }
 
     pub fn remove_contact(self, host: &NetworkHost) -> MidiResult<()> {
@@ -217,11 +237,21 @@ impl NetworkSession {
 
 pub fn activate_bluetooth_connections() -> MidiResult<()> {
     let mut error = ptr::null_mut();
-    unsafe { private::swift_result(cmr_network_activate_bluetooth_connections(&mut error), error) }
+    unsafe {
+        private::swift_result(
+            cmr_network_activate_bluetooth_connections(&mut error),
+            error,
+        )
+    }
 }
 
 pub fn disconnect_bluetooth(uuid: &str) -> MidiResult<()> {
     let uuid = private::to_cstring(uuid)?;
     let mut error = ptr::null_mut();
-    unsafe { private::swift_result(cmr_network_disconnect_bluetooth(uuid.as_ptr(), &mut error), error) }
+    unsafe {
+        private::swift_result(
+            cmr_network_disconnect_bluetooth(uuid.as_ptr(), &mut error),
+            error,
+        )
+    }
 }

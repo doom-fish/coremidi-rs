@@ -141,7 +141,10 @@ impl MidiProperty {
     property_const!(receive_channels, kMIDIPropertyReceiveChannels);
     property_const!(transmit_channels, kMIDIPropertyTransmitChannels);
     property_const!(max_sysex_speed, kMIDIPropertyMaxSysExSpeed);
-    property_const!(advance_schedule_time_usec, kMIDIPropertyAdvanceScheduleTimeMuSec);
+    property_const!(
+        advance_schedule_time_usec,
+        kMIDIPropertyAdvanceScheduleTimeMuSec
+    );
     property_const!(is_embedded_entity, kMIDIPropertyIsEmbeddedEntity);
     property_const!(is_broadcast, kMIDIPropertyIsBroadcast);
     property_const!(single_realtime_entity, kMIDIPropertySingleRealtimeEntity);
@@ -152,7 +155,10 @@ impl MidiProperty {
     property_const!(factory_patch_name_file, kMIDIPropertyFactoryPatchNameFile);
     property_const!(user_patch_name_file, kMIDIPropertyUserPatchNameFile);
     property_const!(name_configuration, kMIDIPropertyNameConfiguration);
-    property_const!(name_configuration_dictionary, kMIDIPropertyNameConfigurationDictionary);
+    property_const!(
+        name_configuration_dictionary,
+        kMIDIPropertyNameConfigurationDictionary
+    );
     property_const!(image, kMIDIPropertyImage);
     property_const!(driver_version, kMIDIPropertyDriverVersion);
     property_const!(supports_general_midi, kMIDIPropertySupportsGeneralMIDI);
@@ -161,15 +167,27 @@ impl MidiProperty {
     property_const!(receives_clock, kMIDIPropertyReceivesClock);
     property_const!(receives_mtc, kMIDIPropertyReceivesMTC);
     property_const!(receives_notes, kMIDIPropertyReceivesNotes);
-    property_const!(receives_program_changes, kMIDIPropertyReceivesProgramChanges);
+    property_const!(
+        receives_program_changes,
+        kMIDIPropertyReceivesProgramChanges
+    );
     property_const!(receives_bank_select_msb, kMIDIPropertyReceivesBankSelectMSB);
     property_const!(receives_bank_select_lsb, kMIDIPropertyReceivesBankSelectLSB);
     property_const!(transmits_clock, kMIDIPropertyTransmitsClock);
     property_const!(transmits_mtc, kMIDIPropertyTransmitsMTC);
     property_const!(transmits_notes, kMIDIPropertyTransmitsNotes);
-    property_const!(transmits_program_changes, kMIDIPropertyTransmitsProgramChanges);
-    property_const!(transmits_bank_select_msb, kMIDIPropertyTransmitsBankSelectMSB);
-    property_const!(transmits_bank_select_lsb, kMIDIPropertyTransmitsBankSelectLSB);
+    property_const!(
+        transmits_program_changes,
+        kMIDIPropertyTransmitsProgramChanges
+    );
+    property_const!(
+        transmits_bank_select_msb,
+        kMIDIPropertyTransmitsBankSelectMSB
+    );
+    property_const!(
+        transmits_bank_select_lsb,
+        kMIDIPropertyTransmitsBankSelectLSB
+    );
     property_const!(pan_disrupts_stereo, kMIDIPropertyPanDisruptsStereo);
     property_const!(is_sampler, kMIDIPropertyIsSampler);
     property_const!(is_drum_machine, kMIDIPropertyIsDrumMachine);
@@ -182,7 +200,10 @@ impl MidiProperty {
     property_const!(display_name, kMIDIPropertyDisplayName);
     property_const!(protocol_id, kMIDIPropertyProtocolID);
     property_const!(ump_active_group_bitmap, kMIDIPropertyUMPActiveGroupBitmap);
-    property_const!(ump_can_transmit_groupless, kMIDIPropertyUMPCanTransmitGroupless);
+    property_const!(
+        ump_can_transmit_groupless,
+        kMIDIPropertyUMPCanTransmitGroupless
+    );
     property_const!(associated_endpoint, kMIDIPropertyAssociatedEndpoint);
     property_const!(driver_uses_serial, kMIDIDriverPropertyUsesSerial);
 }
@@ -218,7 +239,11 @@ pub trait MidiObject {
         object_dictionary_property_json(self.raw_object(), property)
     }
 
-    fn set_dictionary_property_json(&self, property: MidiProperty, value: &Value) -> MidiResult<()> {
+    fn set_dictionary_property_json(
+        &self,
+        property: MidiProperty,
+        value: &Value,
+    ) -> MidiResult<()> {
         object_set_dictionary_property_json(self.raw_object(), property, value)
     }
 
@@ -263,7 +288,9 @@ pub(crate) fn object_set_integer_property(
     property: MidiProperty,
     value: i32,
 ) -> MidiResult<()> {
-    result_from_status(unsafe { ffi::MIDIObjectSetIntegerProperty(object, property.as_raw(), value) })
+    result_from_status(unsafe {
+        ffi::MIDIObjectSetIntegerProperty(object, property.as_raw(), value)
+    })
 }
 
 pub(crate) fn object_string_property(
@@ -336,7 +363,9 @@ pub(crate) fn object_dictionary_property_json(
     property: MidiProperty,
 ) -> MidiResult<Value> {
     let mut error = ptr::null_mut();
-    let json = unsafe { cmr_midi_object_get_dictionary_property_json(object, property.as_raw(), &mut error) };
+    let json = unsafe {
+        cmr_midi_object_get_dictionary_property_json(object, property.as_raw(), &mut error)
+    };
     if !error.is_null() {
         return Err(unsafe { MidiError::Bridge(private::take_c_string(error)) });
     }

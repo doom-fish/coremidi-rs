@@ -19,8 +19,7 @@ fn main() {
     if let Ok(constants) = UmpEndpointManager::constants() {
         println!(
             "ump_endpoint_added_notification={} function_block_key={}",
-            constants.endpoint_added_notification,
-            constants.function_block_object_key,
+            constants.endpoint_added_notification, constants.function_block_object_key,
         );
     }
     if let Ok(endpoints) = UmpEndpointManager::endpoints() {

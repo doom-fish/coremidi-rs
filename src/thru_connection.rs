@@ -118,8 +118,9 @@ impl MidiTransform {
 
     pub fn from_raw(raw: ffi::MIDITransform) -> MidiResult<Self> {
         Ok(Self {
-            kind: MidiTransformKind::from_raw(raw.transform)
-                .ok_or_else(|| MidiError::Bridge(format!("unknown MIDITransform kind {}", raw.transform)))?,
+            kind: MidiTransformKind::from_raw(raw.transform).ok_or_else(|| {
+                MidiError::Bridge(format!("unknown MIDITransform kind {}", raw.transform))
+            })?,
             param: raw.param,
         })
     }
@@ -136,11 +137,17 @@ pub struct MidiControlTransform {
 impl MidiControlTransform {
     pub fn from_raw(raw: ffi::MIDIControlTransform) -> MidiResult<Self> {
         Ok(Self {
-            control_type: MidiControlType::from_raw(raw.controlType)
-                .ok_or_else(|| MidiError::Bridge(format!("unknown MIDIControlType {}", raw.controlType)))?,
-            remapped_control_type: MidiControlType::from_raw(raw.remappedControlType).ok_or_else(|| {
-                MidiError::Bridge(format!("unknown MIDIControlType {}", raw.remappedControlType))
+            control_type: MidiControlType::from_raw(raw.controlType).ok_or_else(|| {
+                MidiError::Bridge(format!("unknown MIDIControlType {}", raw.controlType))
             })?,
+            remapped_control_type: MidiControlType::from_raw(raw.remappedControlType).ok_or_else(
+                || {
+                    MidiError::Bridge(format!(
+                        "unknown MIDIControlType {}",
+                        raw.remappedControlType
+                    ))
+                },
+            )?,
             control_number: raw.controlNumber,
             transform: MidiTransform::from_raw(ffi::MIDITransform {
                 transform: raw.transform,
@@ -228,7 +235,9 @@ impl Default for ThruConnectionParams {
 impl ThruConnectionParams {
     pub fn from_bytes(bytes: &[u8]) -> MidiResult<Self> {
         if bytes.len() < core::mem::size_of::<ffi::MIDIThruConnectionParams>() {
-            return Err(MidiError::Bridge("thru connection parameter blob is too small".into()));
+            return Err(MidiError::Bridge(
+                "thru connection parameter blob is too small".into(),
+            ));
         }
 
         let mut base = MaybeUninit::<ffi::MIDIThruConnectionParams>::zeroed();
@@ -260,14 +269,20 @@ impl ThruConnectionParams {
                 .checked_mul(map_size)
                 .ok_or_else(|| MidiError::Bridge("map count overflow".into()))?;
             if bytes.len() < base_size + control_bytes + map_bytes {
-                return Err(MidiError::Bridge("thru connection parameter blob is truncated".into()));
+                return Err(MidiError::Bridge(
+                    "thru connection parameter blob is truncated".into(),
+                ));
             }
 
             let raw_controls = tail[..control_bytes]
                 .chunks_exact(control_size)
                 .map(|chunk| {
                     let mut raw = MaybeUninit::<ffi::MIDIControlTransform>::zeroed();
-                    ptr::copy_nonoverlapping(chunk.as_ptr(), raw.as_mut_ptr().cast::<u8>(), control_size);
+                    ptr::copy_nonoverlapping(
+                        chunk.as_ptr(),
+                        raw.as_mut_ptr().cast::<u8>(),
+                        control_size,
+                    );
                     raw.assume_init()
                 })
                 .collect::<Vec<_>>();
@@ -327,7 +342,9 @@ impl ThruConnectionParams {
             return Err(MidiError::Bridge("too many thru connection sources".into()));
         }
         if self.destinations.len() > ffi::kMIDIThruConnection_MaxEndpoints {
-            return Err(MidiError::Bridge("too many thru connection destinations".into()));
+            return Err(MidiError::Bridge(
+                "too many thru connection destinations".into(),
+            ));
         }
 
         let num_sources = u32::try_from(self.sources.len())
@@ -349,7 +366,11 @@ impl ThruConnectionParams {
             for (slot, source) in raw.sources.iter_mut().zip(self.sources.iter().copied()) {
                 *slot = source.into_raw();
             }
-            for (slot, destination) in raw.destinations.iter_mut().zip(self.destinations.iter().copied()) {
+            for (slot, destination) in raw
+                .destinations
+                .iter_mut()
+                .zip(self.destinations.iter().copied())
+            {
                 *slot = destination.into_raw();
             }
             raw.channelMap = self.channel_map;
@@ -374,7 +395,8 @@ impl ThruConnectionParams {
             let base_size = core::mem::size_of::<ffi::MIDIThruConnectionParams>();
             let mut bytes = Vec::with_capacity(
                 base_size
-                    + self.control_transforms.len() * core::mem::size_of::<ffi::MIDIControlTransform>()
+                    + self.control_transforms.len()
+                        * core::mem::size_of::<ffi::MIDIControlTransform>()
                     + self.maps.len() * core::mem::size_of::<u16>(),
             );
             bytes.extend_from_slice(std::slice::from_raw_parts(
@@ -413,7 +435,9 @@ impl ThruConnection {
         unsafe {
             private::swift_result(
                 cmr_thru_connection_create(
-                    owner_id.as_ref().map_or(ptr::null(), |value| value.as_ptr()),
+                    owner_id
+                        .as_ref()
+                        .map_or(ptr::null(), |value| value.as_ptr()),
                     bytes.as_ptr(),
                     bytes.len(),
                     &mut raw,
@@ -430,7 +454,10 @@ impl ThruConnection {
         let mut out_len = 0;
         let mut error = ptr::null_mut();
         unsafe {
-            private::swift_result(cmr_thru_connection_get_params(self.raw, &mut out_bytes, &mut out_len, &mut error), error)?;
+            private::swift_result(
+                cmr_thru_connection_get_params(self.raw, &mut out_bytes, &mut out_len, &mut error),
+                error,
+            )?;
             let bytes = private::take_bytes(out_bytes, out_len);
             ThruConnectionParams::from_bytes(&bytes)
         }
@@ -454,12 +481,19 @@ impl ThruConnection {
         let mut error = ptr::null_mut();
         unsafe {
             private::swift_result(
-                cmr_thru_connection_find(owner_id.as_ptr(), &mut out_bytes, &mut out_len, &mut error),
+                cmr_thru_connection_find(
+                    owner_id.as_ptr(),
+                    &mut out_bytes,
+                    &mut out_len,
+                    &mut error,
+                ),
                 error,
             )?;
             let bytes = private::take_bytes(out_bytes, out_len);
             if bytes.len() % core::mem::size_of::<ffi::MIDIThruConnectionRef>() != 0 {
-                return Err(MidiError::Bridge("thru connection find blob is not connection-ref aligned".into()));
+                return Err(MidiError::Bridge(
+                    "thru connection find blob is not connection-ref aligned".into(),
+                ));
             }
             Ok(bytes
                 .chunks_exact(core::mem::size_of::<ffi::MIDIThruConnectionRef>())
@@ -485,6 +519,8 @@ impl ThruConnection {
 impl Drop for ThruConnection {
     fn drop(&mut self) {
         let mut error = ptr::null_mut();
-        let _ = unsafe { private::swift_result(cmr_thru_connection_dispose(self.raw, &mut error), error) };
+        let _ = unsafe {
+            private::swift_result(cmr_thru_connection_dispose(self.raw, &mut error), error)
+        };
     }
 }

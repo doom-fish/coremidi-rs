@@ -14,19 +14,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         CiManagementMessageType::Discovery.as_raw(),
     );
 
-    let example_profile = legacy_ci_profile(&[0x7E, 0, 0, 0, 0], Some("Example Profile")).unwrap_or_else(|_| {
-        LegacyCiProfileInfo {
+    let example_profile = legacy_ci_profile(&[0x7E, 0, 0, 0, 0], Some("Example Profile"))
+        .unwrap_or_else(|_| LegacyCiProfileInfo {
             name: String::from("Example Profile"),
             profile_id: vec![0x7E, 0, 0, 0, 0],
-        }
-    });
+        });
     let state = CiProfileState::new(Some(0), std::slice::from_ref(&example_profile), &[])?;
     let snapshot = state.snapshot()?;
     println!(
         "profile_state channel={} enabled_profiles={} first_name={}",
         snapshot.midi_channel,
         snapshot.enabled_profiles.len(),
-        snapshot.enabled_profiles.first().map_or("", |profile| profile.name.as_str()),
+        snapshot
+            .enabled_profiles
+            .first()
+            .map_or("", |profile| profile.name.as_str()),
     );
     Ok(())
 }

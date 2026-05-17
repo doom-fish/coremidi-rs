@@ -338,7 +338,11 @@ pub struct MidiMessage96(ffi::MIDIMessage_96);
 impl MidiMessage96 {
     #[must_use]
     pub const fn new(word0: u32, word1: u32, word2: u32) -> Self {
-        Self(ffi::MIDIMessage_96 { word0, word1, word2 })
+        Self(ffi::MIDIMessage_96 {
+            word0,
+            word1,
+            word2,
+        })
     }
 
     #[must_use]
@@ -758,7 +762,9 @@ impl<'a> MidiEventPacketRef<'a> {
 
     #[must_use]
     pub fn message_type(self) -> Option<MidiMessageType> {
-        self.words().first().and_then(|word| MidiMessageType::from_up_word(*word))
+        self.words()
+            .first()
+            .and_then(|word| MidiMessageType::from_up_word(*word))
     }
 }
 

@@ -25,8 +25,10 @@
     clippy::redundant_pub_crate
 )]
 
-pub(crate) mod cf;
+#[cfg(feature = "async")]
+pub mod async_api;
 pub mod capability;
+pub(crate) mod cf;
 pub mod client;
 pub mod driver;
 pub mod endpoint;
@@ -37,26 +39,26 @@ pub mod notification;
 pub mod object;
 pub mod packet;
 pub mod port;
+pub(crate) mod private;
 pub mod property;
 pub mod setup;
 pub mod thru_connection;
-pub(crate) mod private;
-#[cfg(feature = "async")]
-pub mod async_api;
 
-pub use capability::{
-    ci_device_manager_constants, discovered_ci_devices, legacy_ci_profile, CiDeviceInfo,
-    CiDeviceManagerConstants, CiManagementMessageType, CiProcessInquiryMessageType,
-    CiProfileInfo, CiProfileMessageType, CiProfileState, CiProfileStateInfo,
-    CiPropertyExchangeMessageType, LegacyCiProfileInfo,
-};
 #[cfg(feature = "async")]
 pub use crate::async_api::{
-    MidiClientNotificationStream, MidiCIDiscoveryStream, MidiEventStream,
-    MidiVirtualDestinationStream, MidiThruConnectionStream, OwnedEventList,
+    MidiCIDiscoveryStream, MidiClientNotificationStream, MidiEventStream, MidiThruConnectionStream,
+    MidiVirtualDestinationStream, OwnedEventList,
+};
+pub use capability::{
+    ci_device_manager_constants, discovered_ci_devices, legacy_ci_profile, CiDeviceInfo,
+    CiDeviceManagerConstants, CiManagementMessageType, CiProcessInquiryMessageType, CiProfileInfo,
+    CiProfileMessageType, CiProfileState, CiProfileStateInfo, CiPropertyExchangeMessageType,
+    LegacyCiProfileInfo,
 };
 pub use client::MidiClient;
-pub use driver::{driver_interface_ids, driver_io_run_loop_available, DriverInterfaceIds, DriverOwnedDevice};
+pub use driver::{
+    driver_interface_ids, driver_io_run_loop_available, DriverInterfaceIds, DriverOwnedDevice,
+};
 pub use endpoint::{
     destination, destination_count, destinations, device, device_count, devices, external_device,
     external_device_count, external_devices, source, source_count, sources, Midi2DeviceInfo,
@@ -76,13 +78,15 @@ pub use network::{
 pub use notification::{Notification, NotificationMessageId};
 pub use packet::{
     EventIter, EventListBuffer, EventListRef, MidiCvStatus, MidiEventPacketRef, MidiMessage128,
-    MidiMessage64, MidiMessage96, MidiMessageType, MidiNoteAttribute,
-    MidiPerNoteManagementOptions, MidiPacketRef, MidiProgramChangeOptions, MidiProtocol,
-    MidiSysExStatus, MidiSystemStatus, MidiUtilityStatus, PacketIter, PacketListBuffer,
-    PacketListRef, UmpStreamMessageFormat, UmpStreamMessageStatus,
+    MidiMessage64, MidiMessage96, MidiMessageType, MidiNoteAttribute, MidiPacketRef,
+    MidiPerNoteManagementOptions, MidiProgramChangeOptions, MidiProtocol, MidiSysExStatus,
+    MidiSystemStatus, MidiUtilityStatus, PacketIter, PacketListBuffer, PacketListRef,
+    UmpStreamMessageFormat, UmpStreamMessageStatus,
 };
 pub use port::{flush_output, MidiInputPort, MidiOutputPort, MidiProtocolReadProc};
-pub use property::{object_find_by_unique_id, MidiObject, MidiObjectType, MidiProperty, ResolvedMidiObject};
+pub use property::{
+    object_find_by_unique_id, MidiObject, MidiObjectType, MidiProperty, ResolvedMidiObject,
+};
 pub use setup::{
     add_driver_device, add_external_device_named, current_setup_xml, device_add_entity_deprecated,
     device_new_entity, device_remove_entity, entity_set_endpoint_counts, remove_device,
@@ -96,18 +100,17 @@ pub use thru_connection::{
 /// Common imports for users of this crate.
 pub mod prelude {
     pub use crate::{
-        device, device_count, devices, destination, destination_count, destinations,
+        destination, destination_count, destinations, device, device_count, devices,
         external_device, external_device_count, external_devices, source, source_count, sources,
-        EventListBuffer, EventListRef, MidiClient, MidiDevice, MidiEndpoint, MidiEntity,
-        MidiError, MidiEventPacketRef, MidiInputPort, MidiObject, MidiOutputPort, MidiPacketRef,
-        MidiProperty, MidiProtocol, MidiProtocolReadProc, MidiResult, MidiStatus,
-        Notification, NotificationMessageId, PacketListBuffer, PacketListRef, VirtualDestination,
-        VirtualSource,
+        EventListBuffer, EventListRef, MidiClient, MidiDevice, MidiEndpoint, MidiEntity, MidiError,
+        MidiEventPacketRef, MidiInputPort, MidiObject, MidiOutputPort, MidiPacketRef, MidiProperty,
+        MidiProtocol, MidiProtocolReadProc, MidiResult, MidiStatus, Notification,
+        NotificationMessageId, PacketListBuffer, PacketListRef, VirtualDestination, VirtualSource,
     };
 
     #[cfg(feature = "async")]
     pub use crate::{
-        MidiClientNotificationStream, MidiCIDiscoveryStream, MidiEventStream,
-        MidiVirtualDestinationStream, MidiThruConnectionStream, OwnedEventList,
+        MidiCIDiscoveryStream, MidiClientNotificationStream, MidiEventStream,
+        MidiThruConnectionStream, MidiVirtualDestinationStream, OwnedEventList,
     };
 }

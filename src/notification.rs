@@ -173,7 +173,9 @@ impl Notification {
                     MidiError::Serialization("missing object in property change payload".into())
                 })?,
                 object_type: MidiObjectType::from_raw(payload.object_type.ok_or_else(|| {
-                    MidiError::Serialization("missing object type in property change payload".into())
+                    MidiError::Serialization(
+                        "missing object type in property change payload".into(),
+                    )
                 })?),
                 property_name: payload.property_name.unwrap_or_default(),
             }),

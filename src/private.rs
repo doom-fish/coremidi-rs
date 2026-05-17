@@ -56,7 +56,9 @@ pub(crate) unsafe fn swift_result(status: i32, error_ptr: *mut c_char) -> MidiRe
     if status <= -10_000 {
         return crate::error::result_from_status(status);
     }
-    Err(MidiError::Bridge(format!("CoreMIDI bridge returned status {status}")))
+    Err(MidiError::Bridge(format!(
+        "CoreMIDI bridge returned status {status}"
+    )))
 }
 
 pub(crate) fn encode_json<T: Serialize + ?Sized>(value: &T) -> MidiResult<CString> {
@@ -70,7 +72,9 @@ pub(crate) unsafe fn take_json<T: DeserializeOwned>(ptr: *mut c_char) -> MidiRes
     serde_json::from_str(&json).map_err(|error| MidiError::Serialization(error.to_string()))
 }
 
-pub(crate) unsafe fn take_optional_json<T: DeserializeOwned>(ptr: *mut c_char) -> MidiResult<Option<T>> {
+pub(crate) unsafe fn take_optional_json<T: DeserializeOwned>(
+    ptr: *mut c_char,
+) -> MidiResult<Option<T>> {
     take_optional_c_string(ptr).map_or_else(
         || Ok(None),
         |json| {

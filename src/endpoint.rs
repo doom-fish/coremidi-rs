@@ -574,9 +574,15 @@ pub struct UmpEndpointInfo {
     #[serde(rename = "productInstanceID", alias = "productInstanceId")]
     pub product_instance_id: String,
     pub has_static_function_blocks: bool,
-    #[serde(rename = "hasJRTSReceiveCapability", alias = "hasJrtsReceiveCapability")]
+    #[serde(
+        rename = "hasJRTSReceiveCapability",
+        alias = "hasJrtsReceiveCapability"
+    )]
     pub has_jrts_receive_capability: bool,
-    #[serde(rename = "hasJRTSTransmitCapability", alias = "hasJrtsTransmitCapability")]
+    #[serde(
+        rename = "hasJRTSTransmitCapability",
+        alias = "hasJrtsTransmitCapability"
+    )]
     pub has_jrts_transmit_capability: bool,
     pub endpoint_type: u8,
     pub function_blocks: Vec<UmpFunctionBlockInfo>,
@@ -702,7 +708,10 @@ impl MutableUmpFunctionBlock {
     pub fn set_enabled(&self, is_enabled: bool) -> MidiResult<()> {
         let mut error = ptr::null_mut();
         unsafe {
-            private::swift_result(cmr_ump_function_block_set_enabled(self.raw, is_enabled, &mut error), error)
+            private::swift_result(
+                cmr_ump_function_block_set_enabled(self.raw, is_enabled, &mut error),
+                error,
+            )
         }
     }
 
@@ -710,7 +719,10 @@ impl MutableUmpFunctionBlock {
         let name = private::to_cstring(name)?;
         let mut error = ptr::null_mut();
         unsafe {
-            private::swift_result(cmr_ump_function_block_set_name(self.raw, name.as_ptr(), &mut error), error)
+            private::swift_result(
+                cmr_ump_function_block_set_name(self.raw, name.as_ptr(), &mut error),
+                error,
+            )
         }
     }
 
@@ -790,7 +802,10 @@ impl MutableUmpEndpoint {
         let name = private::to_cstring(name)?;
         let mut error = ptr::null_mut();
         unsafe {
-            private::swift_result(cmr_ump_mutable_endpoint_set_name(self.raw, name.as_ptr(), &mut error), error)
+            private::swift_result(
+                cmr_ump_mutable_endpoint_set_name(self.raw, name.as_ptr(), &mut error),
+                error,
+            )
         }
     }
 
@@ -822,7 +837,10 @@ impl MutableUmpEndpoint {
     pub fn set_enabled(&self, is_enabled: bool) -> MidiResult<()> {
         let mut error = ptr::null_mut();
         unsafe {
-            private::swift_result(cmr_ump_mutable_endpoint_set_enabled(self.raw, is_enabled, &mut error), error)
+            private::swift_result(
+                cmr_ump_mutable_endpoint_set_enabled(self.raw, is_enabled, &mut error),
+                error,
+            )
         }
     }
 }

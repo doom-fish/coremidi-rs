@@ -11,5 +11,8 @@ fn thru_connection_area_roundtrips_params() {
         kind: MidiTransformKind::Add,
         param: 12,
     };
-    assert_eq!(MidiTransform::from_raw(transform.into_raw()).expect("decode raw transform"), transform);
+    assert_eq!(
+        MidiTransform::from_raw(transform.into_raw()).expect("decode raw transform"),
+        transform
+    );
 }

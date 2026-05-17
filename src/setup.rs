@@ -85,7 +85,12 @@ pub fn add_external_device_named(
     let model = OwnedCFString::new(model)?;
     let mut raw = 0;
     result_from_status(unsafe {
-        ffi::MIDIExternalDeviceCreate(name.as_raw(), manufacturer.as_raw(), model.as_raw(), &mut raw)
+        ffi::MIDIExternalDeviceCreate(
+            name.as_raw(),
+            manufacturer.as_raw(),
+            model.as_raw(),
+            &mut raw,
+        )
     })?;
     result_from_status(unsafe { ffi::MIDISetupAddExternalDevice(raw) })?;
     Ok(unsafe { MidiDevice::from_raw(raw) })
@@ -151,6 +156,10 @@ pub fn entity_set_endpoint_counts(
     num_destination_endpoints: usize,
 ) -> MidiResult<()> {
     result_from_status(unsafe {
-        ffi::MIDIEntityAddOrRemoveEndpoints(entity.raw(), num_source_endpoints, num_destination_endpoints)
+        ffi::MIDIEntityAddOrRemoveEndpoints(
+            entity.raw(),
+            num_source_endpoints,
+            num_destination_endpoints,
+        )
     })
 }

@@ -440,75 +440,247 @@ mod raw_coremidi {
         pub static kMIDIPropertyAssociatedEndpoint: CFStringRef;
         pub static kMIDIDriverPropertyUsesSerial: CFStringRef;
 
-        pub fn MIDIClientCreate(name: CFStringRef, notifyProc: MIDINotifyProc, notifyRefCon: *mut c_void, outClient: *mut MIDIClientRef) -> OSStatus;
-        pub fn MIDIClientCreateWithBlock(name: CFStringRef, outClient: *mut MIDIClientRef, notifyBlock: MIDINotifyBlock) -> OSStatus;
+        pub fn MIDIClientCreate(
+            name: CFStringRef,
+            notifyProc: MIDINotifyProc,
+            notifyRefCon: *mut c_void,
+            outClient: *mut MIDIClientRef,
+        ) -> OSStatus;
+        pub fn MIDIClientCreateWithBlock(
+            name: CFStringRef,
+            outClient: *mut MIDIClientRef,
+            notifyBlock: MIDINotifyBlock,
+        ) -> OSStatus;
         pub fn MIDIClientDispose(client: MIDIClientRef) -> OSStatus;
-        pub fn MIDIInputPortCreateWithProtocol(client: MIDIClientRef, portName: CFStringRef, protocol: MIDIProtocolID, outPort: *mut MIDIPortRef, receiveBlock: MIDIReceiveBlock) -> OSStatus;
-        pub fn MIDIInputPortCreate(client: MIDIClientRef, portName: CFStringRef, readProc: MIDIReadProc, refCon: *mut c_void, outPort: *mut MIDIPortRef) -> OSStatus;
-        pub fn MIDIInputPortCreateWithBlock(client: MIDIClientRef, portName: CFStringRef, outPort: *mut MIDIPortRef, readBlock: MIDIReadBlock) -> OSStatus;
-        pub fn MIDIOutputPortCreate(client: MIDIClientRef, portName: CFStringRef, outPort: *mut MIDIPortRef) -> OSStatus;
+        pub fn MIDIInputPortCreateWithProtocol(
+            client: MIDIClientRef,
+            portName: CFStringRef,
+            protocol: MIDIProtocolID,
+            outPort: *mut MIDIPortRef,
+            receiveBlock: MIDIReceiveBlock,
+        ) -> OSStatus;
+        pub fn MIDIInputPortCreate(
+            client: MIDIClientRef,
+            portName: CFStringRef,
+            readProc: MIDIReadProc,
+            refCon: *mut c_void,
+            outPort: *mut MIDIPortRef,
+        ) -> OSStatus;
+        pub fn MIDIInputPortCreateWithBlock(
+            client: MIDIClientRef,
+            portName: CFStringRef,
+            outPort: *mut MIDIPortRef,
+            readBlock: MIDIReadBlock,
+        ) -> OSStatus;
+        pub fn MIDIOutputPortCreate(
+            client: MIDIClientRef,
+            portName: CFStringRef,
+            outPort: *mut MIDIPortRef,
+        ) -> OSStatus;
         pub fn MIDIPortDispose(port: MIDIPortRef) -> OSStatus;
-        pub fn MIDIPortConnectSource(port: MIDIPortRef, source: MIDIEndpointRef, connRefCon: *mut c_void) -> OSStatus;
+        pub fn MIDIPortConnectSource(
+            port: MIDIPortRef,
+            source: MIDIEndpointRef,
+            connRefCon: *mut c_void,
+        ) -> OSStatus;
         pub fn MIDIPortDisconnectSource(port: MIDIPortRef, source: MIDIEndpointRef) -> OSStatus;
         pub fn MIDIGetNumberOfDevices() -> ItemCount;
         pub fn MIDIGetDevice(deviceIndex0: ItemCount) -> MIDIDeviceRef;
         pub fn MIDIDeviceGetNumberOfEntities(device: MIDIDeviceRef) -> ItemCount;
-        pub fn MIDIDeviceGetEntity(device: MIDIDeviceRef, entityIndex0: ItemCount) -> MIDIEntityRef;
+        pub fn MIDIDeviceGetEntity(device: MIDIDeviceRef, entityIndex0: ItemCount)
+            -> MIDIEntityRef;
         pub fn MIDIEntityGetNumberOfSources(entity: MIDIEntityRef) -> ItemCount;
-        pub fn MIDIEntityGetSource(entity: MIDIEntityRef, sourceIndex0: ItemCount) -> MIDIEndpointRef;
+        pub fn MIDIEntityGetSource(
+            entity: MIDIEntityRef,
+            sourceIndex0: ItemCount,
+        ) -> MIDIEndpointRef;
         pub fn MIDIEntityGetNumberOfDestinations(entity: MIDIEntityRef) -> ItemCount;
-        pub fn MIDIEntityGetDestination(entity: MIDIEntityRef, destIndex0: ItemCount) -> MIDIEndpointRef;
-        pub fn MIDIEntityGetDevice(entity: MIDIEntityRef, outDevice: *mut MIDIDeviceRef) -> OSStatus;
+        pub fn MIDIEntityGetDestination(
+            entity: MIDIEntityRef,
+            destIndex0: ItemCount,
+        ) -> MIDIEndpointRef;
+        pub fn MIDIEntityGetDevice(
+            entity: MIDIEntityRef,
+            outDevice: *mut MIDIDeviceRef,
+        ) -> OSStatus;
         pub fn MIDIGetNumberOfSources() -> ItemCount;
         pub fn MIDIGetSource(sourceIndex0: ItemCount) -> MIDIEndpointRef;
         pub fn MIDIGetNumberOfDestinations() -> ItemCount;
         pub fn MIDIGetDestination(destIndex0: ItemCount) -> MIDIEndpointRef;
-        pub fn MIDIEndpointGetEntity(endpoint: MIDIEndpointRef, outEntity: *mut MIDIEntityRef) -> OSStatus;
-        pub fn MIDIDestinationCreateWithProtocol(client: MIDIClientRef, name: CFStringRef, protocol: MIDIProtocolID, outDest: *mut MIDIEndpointRef, readBlock: MIDIReceiveBlock) -> OSStatus;
-        pub fn MIDIDestinationCreate(client: MIDIClientRef, name: CFStringRef, readProc: MIDIReadProc, refCon: *mut c_void, outDest: *mut MIDIEndpointRef) -> OSStatus;
-        pub fn MIDIDestinationCreateWithBlock(client: MIDIClientRef, name: CFStringRef, outDest: *mut MIDIEndpointRef, readBlock: MIDIReadBlock) -> OSStatus;
-        pub fn MIDISourceCreateWithProtocol(client: MIDIClientRef, name: CFStringRef, protocol: MIDIProtocolID, outSrc: *mut MIDIEndpointRef) -> OSStatus;
-        pub fn MIDISourceCreate(client: MIDIClientRef, name: CFStringRef, outSrc: *mut MIDIEndpointRef) -> OSStatus;
+        pub fn MIDIEndpointGetEntity(
+            endpoint: MIDIEndpointRef,
+            outEntity: *mut MIDIEntityRef,
+        ) -> OSStatus;
+        pub fn MIDIDestinationCreateWithProtocol(
+            client: MIDIClientRef,
+            name: CFStringRef,
+            protocol: MIDIProtocolID,
+            outDest: *mut MIDIEndpointRef,
+            readBlock: MIDIReceiveBlock,
+        ) -> OSStatus;
+        pub fn MIDIDestinationCreate(
+            client: MIDIClientRef,
+            name: CFStringRef,
+            readProc: MIDIReadProc,
+            refCon: *mut c_void,
+            outDest: *mut MIDIEndpointRef,
+        ) -> OSStatus;
+        pub fn MIDIDestinationCreateWithBlock(
+            client: MIDIClientRef,
+            name: CFStringRef,
+            outDest: *mut MIDIEndpointRef,
+            readBlock: MIDIReadBlock,
+        ) -> OSStatus;
+        pub fn MIDISourceCreateWithProtocol(
+            client: MIDIClientRef,
+            name: CFStringRef,
+            protocol: MIDIProtocolID,
+            outSrc: *mut MIDIEndpointRef,
+        ) -> OSStatus;
+        pub fn MIDISourceCreate(
+            client: MIDIClientRef,
+            name: CFStringRef,
+            outSrc: *mut MIDIEndpointRef,
+        ) -> OSStatus;
         pub fn MIDIEndpointDispose(endpt: MIDIEndpointRef) -> OSStatus;
         pub fn MIDIGetNumberOfExternalDevices() -> ItemCount;
         pub fn MIDIGetExternalDevice(deviceIndex0: ItemCount) -> MIDIDeviceRef;
-        pub fn MIDIObjectGetIntegerProperty(obj: MIDIObjectRef, propertyID: CFStringRef, outValue: *mut i32) -> OSStatus;
-        pub fn MIDIObjectSetIntegerProperty(obj: MIDIObjectRef, propertyID: CFStringRef, value: i32) -> OSStatus;
-        pub fn MIDIObjectGetStringProperty(obj: MIDIObjectRef, propertyID: CFStringRef, outValue: *mut CFStringRef) -> OSStatus;
-        pub fn MIDIObjectSetStringProperty(obj: MIDIObjectRef, propertyID: CFStringRef, value: CFStringRef) -> OSStatus;
-        pub fn MIDIObjectGetDataProperty(obj: MIDIObjectRef, propertyID: CFStringRef, outValue: *mut CFDataRef) -> OSStatus;
-        pub fn MIDIObjectSetDataProperty(obj: MIDIObjectRef, propertyID: CFStringRef, value: CFDataRef) -> OSStatus;
-        pub fn MIDIObjectGetDictionaryProperty(obj: MIDIObjectRef, propertyID: CFStringRef, outValue: *mut CFDictionaryRef) -> OSStatus;
-        pub fn MIDIObjectSetDictionaryProperty(obj: MIDIObjectRef, propertyID: CFStringRef, value: CFDictionaryRef) -> OSStatus;
-        pub fn MIDIObjectGetProperties(obj: MIDIObjectRef, outProperties: *mut CFPropertyListRef, deep: Boolean) -> OSStatus;
+        pub fn MIDIObjectGetIntegerProperty(
+            obj: MIDIObjectRef,
+            propertyID: CFStringRef,
+            outValue: *mut i32,
+        ) -> OSStatus;
+        pub fn MIDIObjectSetIntegerProperty(
+            obj: MIDIObjectRef,
+            propertyID: CFStringRef,
+            value: i32,
+        ) -> OSStatus;
+        pub fn MIDIObjectGetStringProperty(
+            obj: MIDIObjectRef,
+            propertyID: CFStringRef,
+            outValue: *mut CFStringRef,
+        ) -> OSStatus;
+        pub fn MIDIObjectSetStringProperty(
+            obj: MIDIObjectRef,
+            propertyID: CFStringRef,
+            value: CFStringRef,
+        ) -> OSStatus;
+        pub fn MIDIObjectGetDataProperty(
+            obj: MIDIObjectRef,
+            propertyID: CFStringRef,
+            outValue: *mut CFDataRef,
+        ) -> OSStatus;
+        pub fn MIDIObjectSetDataProperty(
+            obj: MIDIObjectRef,
+            propertyID: CFStringRef,
+            value: CFDataRef,
+        ) -> OSStatus;
+        pub fn MIDIObjectGetDictionaryProperty(
+            obj: MIDIObjectRef,
+            propertyID: CFStringRef,
+            outValue: *mut CFDictionaryRef,
+        ) -> OSStatus;
+        pub fn MIDIObjectSetDictionaryProperty(
+            obj: MIDIObjectRef,
+            propertyID: CFStringRef,
+            value: CFDictionaryRef,
+        ) -> OSStatus;
+        pub fn MIDIObjectGetProperties(
+            obj: MIDIObjectRef,
+            outProperties: *mut CFPropertyListRef,
+            deep: Boolean,
+        ) -> OSStatus;
         pub fn MIDIObjectRemoveProperty(obj: MIDIObjectRef, propertyID: CFStringRef) -> OSStatus;
-        pub fn MIDIObjectFindByUniqueID(inUniqueID: MIDIUniqueID, outObject: *mut MIDIObjectRef, outObjectType: *mut MIDIObjectType) -> OSStatus;
-        pub fn MIDISendEventList(port: MIDIPortRef, dest: MIDIEndpointRef, evtlist: *const MIDIEventList) -> OSStatus;
-        pub fn MIDISend(port: MIDIPortRef, dest: MIDIEndpointRef, pktlist: *const MIDIPacketList) -> OSStatus;
+        pub fn MIDIObjectFindByUniqueID(
+            inUniqueID: MIDIUniqueID,
+            outObject: *mut MIDIObjectRef,
+            outObjectType: *mut MIDIObjectType,
+        ) -> OSStatus;
+        pub fn MIDISendEventList(
+            port: MIDIPortRef,
+            dest: MIDIEndpointRef,
+            evtlist: *const MIDIEventList,
+        ) -> OSStatus;
+        pub fn MIDISend(
+            port: MIDIPortRef,
+            dest: MIDIEndpointRef,
+            pktlist: *const MIDIPacketList,
+        ) -> OSStatus;
         pub fn MIDISendSysex(request: *mut MIDISysexSendRequest) -> OSStatus;
         pub fn MIDISendUMPSysex(request: *mut MIDISysexSendRequestUMP) -> OSStatus;
         pub fn MIDISendUMPSysex8(request: *mut MIDISysexSendRequestUMP) -> OSStatus;
-        pub fn MIDIEventPacketSysexBytesForGroup(packet: *const MIDIEventPacket, groupIndex: u8, outData: *mut CFDataRef) -> OSStatus;
-        pub fn MIDIReceivedEventList(src: MIDIEndpointRef, evtlist: *const MIDIEventList) -> OSStatus;
+        pub fn MIDIEventPacketSysexBytesForGroup(
+            packet: *const MIDIEventPacket,
+            groupIndex: u8,
+            outData: *mut CFDataRef,
+        ) -> OSStatus;
+        pub fn MIDIReceivedEventList(
+            src: MIDIEndpointRef,
+            evtlist: *const MIDIEventList,
+        ) -> OSStatus;
         pub fn MIDIReceived(src: MIDIEndpointRef, pktlist: *const MIDIPacketList) -> OSStatus;
         pub fn MIDIFlushOutput(dest: MIDIEndpointRef) -> OSStatus;
         pub fn MIDIRestart() -> OSStatus;
-        pub fn MIDIEventListInit(evtlist: *mut MIDIEventList, protocol: MIDIProtocolID) -> *mut MIDIEventPacket;
-        pub fn MIDIEventListAdd(evtlist: *mut MIDIEventList, listSize: ByteCount, curPacket: *mut MIDIEventPacket, time: MIDITimeStamp, wordCount: ByteCount, words: *const u32) -> *mut MIDIEventPacket;
+        pub fn MIDIEventListInit(
+            evtlist: *mut MIDIEventList,
+            protocol: MIDIProtocolID,
+        ) -> *mut MIDIEventPacket;
+        pub fn MIDIEventListAdd(
+            evtlist: *mut MIDIEventList,
+            listSize: ByteCount,
+            curPacket: *mut MIDIEventPacket,
+            time: MIDITimeStamp,
+            wordCount: ByteCount,
+            words: *const u32,
+        ) -> *mut MIDIEventPacket;
         pub fn MIDIPacketListInit(pktlist: *mut MIDIPacketList) -> *mut MIDIPacket;
-        pub fn MIDIPacketListAdd(pktlist: *mut MIDIPacketList, listSize: ByteCount, curPacket: *mut MIDIPacket, time: MIDITimeStamp, nData: ByteCount, data: *const Byte) -> *mut MIDIPacket;
-        pub fn MIDIDeviceNewEntity(device: MIDIDeviceRef, name: CFStringRef, protocol: MIDIProtocolID, embedded: Boolean, numSourceEndpoints: ItemCount, numDestinationEndpoints: ItemCount, newEntity: *mut MIDIEntityRef) -> OSStatus;
-        pub fn MIDIDeviceAddEntity(device: MIDIDeviceRef, name: CFStringRef, embedded: Boolean, numSourceEndpoints: ItemCount, numDestinationEndpoints: ItemCount, newEntity: *mut MIDIEntityRef) -> OSStatus;
+        pub fn MIDIPacketListAdd(
+            pktlist: *mut MIDIPacketList,
+            listSize: ByteCount,
+            curPacket: *mut MIDIPacket,
+            time: MIDITimeStamp,
+            nData: ByteCount,
+            data: *const Byte,
+        ) -> *mut MIDIPacket;
+        pub fn MIDIDeviceNewEntity(
+            device: MIDIDeviceRef,
+            name: CFStringRef,
+            protocol: MIDIProtocolID,
+            embedded: Boolean,
+            numSourceEndpoints: ItemCount,
+            numDestinationEndpoints: ItemCount,
+            newEntity: *mut MIDIEntityRef,
+        ) -> OSStatus;
+        pub fn MIDIDeviceAddEntity(
+            device: MIDIDeviceRef,
+            name: CFStringRef,
+            embedded: Boolean,
+            numSourceEndpoints: ItemCount,
+            numDestinationEndpoints: ItemCount,
+            newEntity: *mut MIDIEntityRef,
+        ) -> OSStatus;
         pub fn MIDIDeviceRemoveEntity(device: MIDIDeviceRef, entity: MIDIEntityRef) -> OSStatus;
-        pub fn MIDIEntityAddOrRemoveEndpoints(entity: MIDIEntityRef, numSourceEndpoints: ItemCount, numDestinationEndpoints: ItemCount) -> OSStatus;
+        pub fn MIDIEntityAddOrRemoveEndpoints(
+            entity: MIDIEntityRef,
+            numSourceEndpoints: ItemCount,
+            numDestinationEndpoints: ItemCount,
+        ) -> OSStatus;
         pub fn MIDISetupAddDevice(device: MIDIDeviceRef) -> OSStatus;
         pub fn MIDISetupRemoveDevice(device: MIDIDeviceRef) -> OSStatus;
         pub fn MIDISetupAddExternalDevice(device: MIDIDeviceRef) -> OSStatus;
         pub fn MIDISetupRemoveExternalDevice(device: MIDIDeviceRef) -> OSStatus;
-        pub fn MIDIGetSerialPortOwner(portName: CFStringRef, outDriverName: *mut CFStringRef) -> OSStatus;
+        pub fn MIDIGetSerialPortOwner(
+            portName: CFStringRef,
+            outDriverName: *mut CFStringRef,
+        ) -> OSStatus;
         pub fn MIDISetSerialPortOwner(portName: CFStringRef, driverName: CFStringRef) -> OSStatus;
         pub fn MIDIGetSerialPortDrivers(outDriverNames: *mut CFArrayRef) -> OSStatus;
-        pub fn MIDIExternalDeviceCreate(name: CFStringRef, manufacturer: CFStringRef, model: CFStringRef, outDevice: *mut MIDIDeviceRef) -> OSStatus;
+        pub fn MIDIExternalDeviceCreate(
+            name: CFStringRef,
+            manufacturer: CFStringRef,
+            model: CFStringRef,
+            outDevice: *mut MIDIDeviceRef,
+        ) -> OSStatus;
         pub fn MIDISetupCreate(outSetup: *mut MIDISetupRef) -> OSStatus;
         pub fn MIDISetupDispose(setup: MIDISetupRef) -> OSStatus;
         pub fn MIDISetupInstall(setup: MIDISetupRef) -> OSStatus;
@@ -517,23 +689,55 @@ mod raw_coremidi {
         pub fn MIDISetupFromData(data: CFDataRef, outSetup: *mut MIDISetupRef) -> OSStatus;
         pub fn MIDIBluetoothDriverActivateAllConnections() -> OSStatus;
         pub fn MIDIBluetoothDriverDisconnect(uuid: CFStringRef) -> OSStatus;
-        pub fn MIDIDeviceCreate(owner: MIDIDriverRef, name: CFStringRef, manufacturer: CFStringRef, model: CFStringRef, outDevice: *mut MIDIDeviceRef) -> OSStatus;
+        pub fn MIDIDeviceCreate(
+            owner: MIDIDriverRef,
+            name: CFStringRef,
+            manufacturer: CFStringRef,
+            model: CFStringRef,
+            outDevice: *mut MIDIDeviceRef,
+        ) -> OSStatus;
         pub fn MIDIDeviceDispose(device: MIDIDeviceRef) -> OSStatus;
         pub fn MIDIDeviceListGetNumberOfDevices(devList: MIDIDeviceListRef) -> ItemCount;
-        pub fn MIDIDeviceListGetDevice(devList: MIDIDeviceListRef, index0: ItemCount) -> MIDIDeviceRef;
+        pub fn MIDIDeviceListGetDevice(
+            devList: MIDIDeviceListRef,
+            index0: ItemCount,
+        ) -> MIDIDeviceRef;
         pub fn MIDIDeviceListAddDevice(devList: MIDIDeviceListRef, dev: MIDIDeviceRef) -> OSStatus;
         pub fn MIDIDeviceListDispose(devList: MIDIDeviceListRef) -> OSStatus;
-        pub fn MIDIEndpointSetRefCons(endpt: MIDIEndpointRef, ref1: *mut c_void, ref2: *mut c_void) -> OSStatus;
-        pub fn MIDIEndpointGetRefCons(endpt: MIDIEndpointRef, ref1: *mut *mut c_void, ref2: *mut *mut c_void) -> OSStatus;
+        pub fn MIDIEndpointSetRefCons(
+            endpt: MIDIEndpointRef,
+            ref1: *mut c_void,
+            ref2: *mut c_void,
+        ) -> OSStatus;
+        pub fn MIDIEndpointGetRefCons(
+            endpt: MIDIEndpointRef,
+            ref1: *mut *mut c_void,
+            ref2: *mut *mut c_void,
+        ) -> OSStatus;
         pub fn MIDIGetDriverIORunLoop() -> CFRunLoopRef;
         pub fn MIDIGetDriverDeviceList(driver: MIDIDriverRef) -> MIDIDeviceListRef;
         pub fn MIDIDriverEnableMonitoring(driver: MIDIDriverRef, enabled: Boolean) -> OSStatus;
-        pub fn MIDIThruConnectionParamsInitialize(inConnectionParams: *mut MIDIThruConnectionParams);
-        pub fn MIDIThruConnectionCreate(inPersistentOwnerID: CFStringRef, inConnectionParams: CFDataRef, outConnection: *mut MIDIThruConnectionRef) -> OSStatus;
+        pub fn MIDIThruConnectionParamsInitialize(
+            inConnectionParams: *mut MIDIThruConnectionParams,
+        );
+        pub fn MIDIThruConnectionCreate(
+            inPersistentOwnerID: CFStringRef,
+            inConnectionParams: CFDataRef,
+            outConnection: *mut MIDIThruConnectionRef,
+        ) -> OSStatus;
         pub fn MIDIThruConnectionDispose(connection: MIDIThruConnectionRef) -> OSStatus;
-        pub fn MIDIThruConnectionGetParams(connection: MIDIThruConnectionRef, outConnectionParams: *mut CFDataRef) -> OSStatus;
-        pub fn MIDIThruConnectionSetParams(connection: MIDIThruConnectionRef, inConnectionParams: CFDataRef) -> OSStatus;
-        pub fn MIDIThruConnectionFind(inPersistentOwnerID: CFStringRef, outConnectionList: *mut CFDataRef) -> OSStatus;
+        pub fn MIDIThruConnectionGetParams(
+            connection: MIDIThruConnectionRef,
+            outConnectionParams: *mut CFDataRef,
+        ) -> OSStatus;
+        pub fn MIDIThruConnectionSetParams(
+            connection: MIDIThruConnectionRef,
+            inConnectionParams: CFDataRef,
+        ) -> OSStatus;
+        pub fn MIDIThruConnectionFind(
+            inPersistentOwnerID: CFStringRef,
+            outConnectionList: *mut CFDataRef,
+        ) -> OSStatus;
     }
 }
 
@@ -551,8 +755,17 @@ mod raw_corefoundation {
         pub static kCFAllocatorDefault: CFAllocatorRef;
         pub fn CFRelease(cf: CFTypeRef);
         pub fn CFRetain(cf: CFTypeRef) -> CFTypeRef;
-        pub fn CFStringCreateWithCString(alloc: CFAllocatorRef, c_str: *const c_char, encoding: u32) -> CFStringRef;
-        pub fn CFStringGetCString(string: CFStringRef, buffer: *mut c_char, bufferSize: CFIndex, encoding: u32) -> bool;
+        pub fn CFStringCreateWithCString(
+            alloc: CFAllocatorRef,
+            c_str: *const c_char,
+            encoding: u32,
+        ) -> CFStringRef;
+        pub fn CFStringGetCString(
+            string: CFStringRef,
+            buffer: *mut c_char,
+            bufferSize: CFIndex,
+            encoding: u32,
+        ) -> bool;
         pub fn CFStringGetLength(string: CFStringRef) -> CFIndex;
         pub fn CFStringGetMaximumSizeForEncoding(length: CFIndex, encoding: u32) -> CFIndex;
         pub fn CFDataGetLength(data: CFDataRef) -> CFIndex;

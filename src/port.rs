@@ -11,7 +11,10 @@ use crate::private;
 use crate::property::MidiObject;
 
 extern "C" {
-    fn cmr_flush_output(destination: ffi::MIDIEndpointRef, error_out: *mut *mut core::ffi::c_char) -> i32;
+    fn cmr_flush_output(
+        destination: ffi::MIDIEndpointRef,
+        error_out: *mut *mut core::ffi::c_char,
+    ) -> i32;
 }
 
 pub type MidiProtocolReadProc = unsafe extern "C" fn(*const ffi::MIDIEventList, *mut c_void);

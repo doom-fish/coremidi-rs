@@ -13,8 +13,16 @@ fn endpoint_area_counts_are_iterable() -> coremidi::MidiResult<()> {
     }
 
     let constants = UmpEndpointManager::constants()?;
-    assert!(constants.endpoint_object_key.is_empty() || constants.endpoint_object_key.contains("Endpoint"));
-    assert!(constants.function_block_object_key.is_empty() || constants.function_block_object_key.contains("FunctionBlock"));
+    assert!(
+        constants.endpoint_object_key.is_empty()
+            || constants.endpoint_object_key.contains("Endpoint")
+    );
+    assert!(
+        constants.function_block_object_key.is_empty()
+            || constants
+                .function_block_object_key
+                .contains("FunctionBlock")
+    );
     let _ = UmpEndpointManager::endpoints()?;
     Ok(())
 }

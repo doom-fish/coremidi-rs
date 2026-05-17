@@ -50,6 +50,22 @@ pub struct OwnedEventList {
 impl OwnedEventList {
     /// Copy an event list from a raw pointer. Returns `None` if the pointer is
     /// null or the event list carries an unknown protocol ID.
+    ///
+    /// # Real-time safety
+    ///
+    /// This function allocates a [`Vec`] to hold the copied packets.  When
+    /// called from the `MidiEventStream` or `MidiVirtualDestinationStream`
+    /// receive callbacks it therefore **allocates on the CoreMIDI real-time
+    /// server thread**.  If strict real-time behaviour is required, use a
+    /// raw [`MidiInputPort`](crate::port::MidiInputPort) with a custom
+    /// [`MidiProtocolReadProc`](crate::port::MidiProtocolReadProc) that
+    /// operates on the borrowed `*const MIDIEventList` directly, without
+    /// copying.
+    ///
+    /// # Safety
+    ///
+    /// `ptr` must point to a valid, fully initialised `MIDIEventList` for at
+    /// least the duration of the call.
     pub unsafe fn copy_from(ptr: *const ffi::MIDIEventList) -> Option<Self> {
         if ptr.is_null() {
             return None;
@@ -133,8 +149,14 @@ impl MidiEventStream {
 
 impl Drop for MidiEventStream {
     fn drop(&mut self) {
+        // SAFETY: `self.port` and `self.source` are valid refs created during
+        // `subscribe`.  Disconnecting and disposing the port before dropping
+        // the sender ensures CoreMIDI delivers no further callbacks that
+        // dereference `sender_ptr`.
         let _ = unsafe { ffi::MIDIPortDisconnectSource(self.port, self.source) };
         let _ = unsafe { ffi::MIDIPortDispose(self.port) };
+        // SAFETY: `sender_ptr` was produced by `Box::into_raw` in
+        // `new_stream_pair` and is freed exactly once here.
         unsafe { drop_sender(self.sender_ptr) };
     }
 }
@@ -203,7 +225,12 @@ impl MidiVirtualDestinationStream {
 
 impl Drop for MidiVirtualDestinationStream {
     fn drop(&mut self) {
+        // SAFETY: `self.endpoint` is a valid `MIDIEndpointRef` created in
+        // `create` via the Swift bridge.  Disposing the endpoint before
+        // dropping the sender ensures no further callbacks reference `sender_ptr`.
         let _ = unsafe { ffi::MIDIEndpointDispose(self.endpoint) };
+        // SAFETY: `sender_ptr` was produced by `Box::into_raw` in
+        // `new_stream_pair` and is freed exactly once here.
         unsafe { drop_sender(self.sender_ptr) };
     }
 }
@@ -260,7 +287,22 @@ impl MidiClientNotificationStream {
 
 impl Drop for MidiClientNotificationStream {
     fn drop(&mut self) {
+        // SAFETY: `self.bridged_client` is an ARC-managed Swift object.
+        // Releasing it disposes the underlying `MIDIClientRef` and tears down
+        // the notification block.  The sender is dropped afterwards so that
+        // any in-flight callback that races the ARC release (e.g. a
+        // `kMIDIMsgSetupChanged` fired during `MIDIRestart`) still finds a
+        // live sender and does not dereference freed memory.
+        //
+        // Note: CoreMIDI does not guarantee that in-flight callbacks queued
+        // before disposal are drained synchronously.  The `sender_ptr` null-
+        // check inside `notification_stream_callback` provides a best-effort
+        // guard, but strict safety against a `MIDIRestart`-concurrent drop
+        // would require a barrier (e.g. a serial dispatch queue) not currently
+        // present in this bridge.
         unsafe { private::release_swift_object(self.bridged_client) };
+        // SAFETY: `sender_ptr` was produced by `Box::into_raw` in
+        // `new_stream_pair` and is freed exactly once here.
         unsafe { drop_sender(self.sender_ptr) };
     }
 }
@@ -305,7 +347,13 @@ impl MidiCIDiscoveryStream {
 
 impl Drop for MidiCIDiscoveryStream {
     fn drop(&mut self) {
+        // SAFETY: `self.handle` is a non-null opaque pointer returned by
+        // `cmr_ci_discovery_subscribe`.  Unsubscribing before dropping the
+        // sender matches the subscribe ordering and ensures no further
+        // callbacks reference `sender_ptr`.
         unsafe { cmr_ci_discovery_unsubscribe(self.handle) };
+        // SAFETY: `sender_ptr` was produced by `Box::into_raw` in
+        // `new_stream_pair` and is freed exactly once here.
         unsafe { drop_sender(self.sender_ptr) };
     }
 }
@@ -362,7 +410,14 @@ impl MidiThruConnectionStream {
 
 impl Drop for MidiThruConnectionStream {
     fn drop(&mut self) {
+        // SAFETY: same ordering rationale as `MidiClientNotificationStream`.
+        // Release the Swift-managed MIDI client before the sender so that any
+        // in-flight `ThruConnectionsChanged` notification still finds a live
+        // sender.  See the `MidiClientNotificationStream` drop comment for the
+        // `MIDIRestart` race caveat.
         unsafe { private::release_swift_object(self.bridged_client) };
+        // SAFETY: `sender_ptr` was produced by `Box::into_raw` in
+        // `new_stream_pair` and is freed exactly once here.
         unsafe { drop_sender(self.sender_ptr) };
     }
 }
@@ -404,6 +459,8 @@ fn new_stream_pair<T>(capacity: usize) -> (BoundedAsyncStream<T>, *mut AsyncStre
 
 unsafe fn drop_sender<T>(sender_ptr: *mut AsyncStreamSender<T>) {
     if !sender_ptr.is_null() {
+        // SAFETY: caller guarantees `sender_ptr` was produced by
+        // `Box::into_raw` and has not been freed before.
         drop(Box::from_raw(sender_ptr));
     }
 }
@@ -413,6 +470,16 @@ unsafe fn copy_event_list_to_sender(evtlist: *const ffi::MIDIEventList, ctx: *mu
         return;
     }
 
+    // SAFETY: `ctx` is the `AsyncStreamSender<OwnedEventList>` pointer stored
+    // as `connRefCon` via `MIDIPortConnectSource`.  The sender outlives all
+    // callbacks because the port/endpoint is disposed before the sender is
+    // freed (see the Drop implementations).  We hold a shared reference only
+    // for the duration of this call; the sender's internal channel handles
+    // concurrent access.
+    //
+    // Real-time note: `OwnedEventList::copy_from` allocates a Vec here on the
+    // CoreMIDI real-time server thread.  See `OwnedEventList::copy_from` for
+    // the trade-off and the low-allocation alternative.
     let sender = &*ctx.cast::<AsyncStreamSender<OwnedEventList>>();
     if let Some(event_list) = OwnedEventList::copy_from(evtlist) {
         sender.push(event_list);

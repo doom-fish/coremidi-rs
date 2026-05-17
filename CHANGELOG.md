@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.3.1] - 2026-05-18
+
+### Fixed
+
+- `protocol_receive_block_invoke` (port.rs): wrapped user-callback invocation in
+  `catch_unwind` so a panic from a `MidiProtocolReadProc` cannot unwind across the
+  C ABI boundary into the CoreMIDI server thread (was UB, now aborts cleanly).
+- `OwnedEventList::copy_from`: added `# Real-time safety` doc section documenting
+  the heap allocation that occurs on the CoreMIDI real-time server thread when this
+  is called from `MidiEventStream` or `MidiVirtualDestinationStream`; added a note
+  pointing to the low-allocation alternative (raw `MidiProtocolReadProc`).
+- `copy_event_list_to_sender` (async_api.rs): added real-time allocation note in a
+  `SAFETY:` comment.
+- Added `SAFETY:` comments to all hot-path `unsafe` blocks in `async_api.rs`,
+  `port.rs`, and `client.rs` (Drop implementations, callback trampolines, and
+  raw-pointer casts).
+- `MidiClientNotificationStream::drop` and `MidiClient::drop`: added comments
+  documenting the `MIDIRestart` in-flight callback race and the ordering guarantee
+  (Swift object released before sender/context freed).
+- `doom-fish-utils` dependency version range widened from `"0.1"` to `">=0.1, <0.3"`
+  to allow the next minor bump without a breaking change.
+
 ## [0.3.0] - 2026-05-17
 
 ### Added

@@ -173,12 +173,33 @@ impl MidiClient {
 impl Drop for MidiClient {
     fn drop(&mut self) {
         if let Some(client) = self.bridged_client.take() {
+            // SAFETY: `client` is an ARC-managed Swift object created in
+            // `with_notification_handler`.  Releasing it disposes the
+            // underlying `MIDIClientRef` and unregisters the notification
+            // block.  The `notification_context` is freed afterwards (below)
+            // so any in-flight `MIDIRestart` notification that races this
+            // release still finds a live context and does not dereference
+            // freed memory.
+            //
+            // Caveat: CoreMIDI does not guarantee synchronous draining of
+            // in-flight blocks on disposal.  A callback queued concurrently
+            // on the MIDI server thread (e.g. during `MIDIRestart`) could
+            // theoretically call `notification_callback_trampoline` after the
+            // context box is freed below.  A serial-queue barrier would be
+            // required to eliminate this window entirely; it is not present in
+            // this bridge.
             unsafe { private::release_swift_object(client) };
         } else {
+            // SAFETY: `self.raw` is a valid `MIDIClientRef` created in
+            // `with_notify` and has not been disposed before.
             let _ = unsafe { ffi::MIDIClientDispose(self.raw) };
         }
 
         if let Some(context) = self.notification_context.take() {
+            // SAFETY: `context` was produced by `Box::into_raw` in
+            // `with_notification_handler` and is freed exactly once here,
+            // after the Swift client (and therefore the notification block)
+            // has been released above.
             unsafe {
                 drop(Box::from_raw(context));
             }

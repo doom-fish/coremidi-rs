@@ -1,4 +1,5 @@
 use core::ffi::c_void;
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
 use std::sync::{Mutex, OnceLock};
 
@@ -128,9 +129,16 @@ impl MidiInputPort {
 
 impl Drop for MidiInputPort {
     fn drop(&mut self) {
+        // SAFETY: `self.raw` is a valid `MIDIPortRef` created in `new_legacy`
+        // or `new_with_protocol`.  Disposing the port before freeing the
+        // connection contexts ensures CoreMIDI will not deliver any further
+        // callbacks that dereference those contexts.
         let _ = unsafe { ffi::MIDIPortDispose(self.raw) };
         if let Ok(mut contexts) = self.protocol_contexts.lock() {
             for context in contexts.drain(..) {
+                // SAFETY: each pointer was produced by `Box::into_raw` in
+                // `connect_source_with_protocol_callback` and is freed exactly
+                // once here, after the port has been disposed above.
                 unsafe {
                     drop(Box::from_raw(context));
                 }
@@ -233,12 +241,24 @@ extern "C" fn protocol_receive_block_invoke(
     evtlist: *const ffi::MIDIEventList,
     src_conn_ref_con: *mut c_void,
 ) {
-    if src_conn_ref_con.is_null() {
-        return;
-    }
+    // Wrap in catch_unwind so that a panic in the user callback does not unwind
+    // across the C ABI boundary (which would be undefined behaviour).  This
+    // function is invoked on the CoreMIDI real-time server thread.
+    let _ = catch_unwind(AssertUnwindSafe(|| {
+        if src_conn_ref_con.is_null() {
+            return;
+        }
 
-    let context = unsafe { &*src_conn_ref_con.cast::<ProtocolConnectionContext>() };
-    unsafe { (context.callback)(evtlist, context.ref_con) };
+        // SAFETY: `src_conn_ref_con` is the `ProtocolConnectionContext` box
+        // pointer stored by `MIDIPortConnectSource` in
+        // `connect_source_with_protocol_callback`.  The box lives until
+        // `MidiInputPort::drop`, which calls `MIDIPortDispose` before freeing
+        // the context, ensuring no further callbacks are delivered before the
+        // pointer is freed.
+        let context = unsafe { &*src_conn_ref_con.cast::<ProtocolConnectionContext>() };
+        // SAFETY: the caller guarantees `callback` is a valid `extern "C"` fn.
+        unsafe { (context.callback)(evtlist, context.ref_con) };
+    }));
 }
 
 fn protocol_receive_block() -> *const c_void {

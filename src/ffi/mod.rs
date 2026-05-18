@@ -28,15 +28,10 @@ pub type MIDIThruConnectionRef = MIDIObjectRef;
 pub type MIDIProtocolID = i32;
 pub type MIDIObjectType = i32;
 pub type MIDIUniqueID = i32;
-pub type CFTypeRef = *const c_void;
-pub type CFStringRef = *const c_void;
-pub type CFAllocatorRef = *const c_void;
-pub type CFDataRef = *const c_void;
-pub type CFDictionaryRef = *const c_void;
-pub type CFArrayRef = *const c_void;
-pub type CFPropertyListRef = *const c_void;
-pub type CFRunLoopRef = *const c_void;
-pub type CFUUIDRef = *const c_void;
+pub use apple_cf::raw::{
+    CFAllocatorRef, CFArrayRef, CFDataRef, CFDictionaryRef, CFPropertyListRef, CFRunLoopRef,
+    CFStringRef, CFTypeRef, CFUUIDRef,
+};
 pub type CFIndex = isize;
 
 pub type MIDIUInteger2 = u8;

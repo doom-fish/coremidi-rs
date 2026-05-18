@@ -13,26 +13,26 @@ use crate::private;
 extern "C" {
     fn cmr_midi_object_get_data_property(
         object: ffi::MIDIObjectRef,
-        property: *const core::ffi::c_void,
+        property: ffi::CFStringRef,
         out_bytes: *mut *mut u8,
         out_len: *mut usize,
         error_out: *mut *mut c_char,
     ) -> i32;
     fn cmr_midi_object_set_data_property(
         object: ffi::MIDIObjectRef,
-        property: *const core::ffi::c_void,
+        property: ffi::CFStringRef,
         bytes: *const u8,
         len: usize,
         error_out: *mut *mut c_char,
     ) -> i32;
     fn cmr_midi_object_get_dictionary_property_json(
         object: ffi::MIDIObjectRef,
-        property: *const core::ffi::c_void,
+        property: ffi::CFStringRef,
         error_out: *mut *mut c_char,
     ) -> *mut c_char;
     fn cmr_midi_object_set_dictionary_property_json(
         object: ffi::MIDIObjectRef,
-        property: *const core::ffi::c_void,
+        property: ffi::CFStringRef,
         json: *const c_char,
         error_out: *mut *mut c_char,
     ) -> i32;

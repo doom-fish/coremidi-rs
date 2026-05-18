@@ -8,11 +8,9 @@
 
 use core::ffi::{c_char, c_void};
 
-pub type OSStatus = i32;
 pub const noErr: OSStatus = 0;
 
 pub type Byte = u8;
-pub type Boolean = u8;
 pub type ByteCount = usize;
 pub type ItemCount = usize;
 pub type MIDITimeStamp = u64;
@@ -29,8 +27,8 @@ pub type MIDIProtocolID = i32;
 pub type MIDIObjectType = i32;
 pub type MIDIUniqueID = i32;
 pub use apple_cf::raw::{
-    CFAllocatorRef, CFArrayRef, CFDataRef, CFDictionaryRef, CFIndex, CFPropertyListRef,
-    CFRunLoopRef, CFStringRef, CFTypeID, CFTypeRef, CFUUIDRef,
+    Boolean, CFAllocatorRef, CFArrayRef, CFDataRef, CFDictionaryRef, CFIndex,
+    CFPropertyListRef, CFRunLoopRef, CFStringRef, CFTypeID, CFTypeRef, CFUUIDRef, OSStatus,
 };
 
 pub type MIDIUInteger2 = u8;

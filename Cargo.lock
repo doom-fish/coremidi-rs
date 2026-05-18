@@ -4,16 +4,16 @@ version = 3
 
 [[package]]
 name = "apple-cf"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d110ec64ba49edcbc97fb77907ae336be72f6a89e0e1ca6be155f6e9b146e204"
+checksum = "468753538a6a53da6ea14abc06dc85e12c8ce15fe478117866607a73fedc9771"
 dependencies = [
  "doom-fish-utils 0.1.1",
 ]
 
 [[package]]
 name = "coremidi-rs"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "apple-cf",
  "doom-fish-utils 0.2.0",

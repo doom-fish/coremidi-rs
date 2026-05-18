@@ -57,7 +57,7 @@ pub(crate) fn string_from_cfstring(raw: ffi::CFStringRef) -> MidiResult<String> 
         ffi::CFStringGetCString(
             raw,
             buffer.as_mut_ptr(),
-            isize::try_from(buffer.len()).unwrap_or(isize::MAX),
+            ffi::CFIndex::try_from(buffer.len()).unwrap_or(ffi::CFIndex::MAX),
             ffi::kCFStringEncodingUTF8,
         )
     };

@@ -29,10 +29,9 @@ pub type MIDIProtocolID = i32;
 pub type MIDIObjectType = i32;
 pub type MIDIUniqueID = i32;
 pub use apple_cf::raw::{
-    CFAllocatorRef, CFArrayRef, CFDataRef, CFDictionaryRef, CFPropertyListRef, CFRunLoopRef,
-    CFStringRef, CFTypeRef, CFUUIDRef,
+    CFAllocatorRef, CFArrayRef, CFDataRef, CFDictionaryRef, CFIndex, CFPropertyListRef,
+    CFRunLoopRef, CFStringRef, CFTypeID, CFTypeRef, CFUUIDRef,
 };
-pub type CFIndex = isize;
 
 pub type MIDIUInteger2 = u8;
 pub type MIDIUInteger4 = u8;

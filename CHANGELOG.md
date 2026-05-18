@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0] - 2026-05-18
+
+### Changed
+
+- Re-export `CFIndex` and `CFTypeID` from `apple_cf::raw` instead of duplicating Core Foundation raw type aliases locally in `src/ffi/mod.rs`.
+- Raised the `apple-cf` dependency range to `>=0.9, <0.10` to align with the shared raw definitions.
+
 ## [0.4.0] - 2026-05-18
 
 ### Changed

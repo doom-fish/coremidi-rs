@@ -30,18 +30,21 @@ extern "C" {
 macro_rules! midi_enum {
     ($(#[$meta:meta])* $vis:vis enum $name:ident : $repr:ty { $($variant:ident = $value:expr),+ $(,)? }) => {
         $(#[$meta])*
+        /// Wraps matching CoreMIDI enum values.
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         #[repr($repr)]
         $vis enum $name {
-            $($variant = $value,)+
+            $(#[doc = "Wraps the matching CoreMIDI case."] $variant = $value,)+
         }
 
         impl $name {
+            /// Returns the raw CoreMIDI value for this enum.
             #[must_use]
             pub const fn as_raw(self) -> $repr {
                 self as $repr
             }
 
+            /// Converts a raw CoreMIDI value into this enum when it is known.
             #[must_use]
             pub const fn from_raw(raw: $repr) -> Option<Self> {
                 match raw {
@@ -113,67 +116,103 @@ midi_enum!(
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+/// Mirrors the CoreMIDI CI device manager constants payload.
 pub struct CiDeviceManagerConstants {
+    /// Mirrors the CoreMIDI device added notification field.
     pub device_added_notification: String,
+    /// Mirrors the CoreMIDI device removed notification field.
     pub device_removed_notification: String,
+    /// Mirrors the CoreMIDI profile updated notification field.
     pub profile_updated_notification: String,
+    /// Mirrors the CoreMIDI profile removed notification field.
     pub profile_removed_notification: String,
+    /// Mirrors the CoreMIDI device object key field.
     pub device_object_key: String,
+    /// Mirrors the CoreMIDI profile object key field.
     pub profile_object_key: String,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// Mirrors the CoreMIDI CI profile info payload.
 pub struct CiProfileInfo {
+    /// Mirrors the CoreMIDI name field.
     pub name: String,
     #[serde(rename = "profileID", alias = "profileId")]
+    /// Mirrors the CoreMIDI profile ID field.
     pub profile_id: Vec<u8>,
+    /// Mirrors the CoreMIDI profile type field.
     pub profile_type: u8,
+    /// Mirrors the CoreMIDI group offset field.
     pub group_offset: u8,
+    /// Mirrors the CoreMIDI first channel field.
     pub first_channel: u8,
+    /// Mirrors the CoreMIDI enabled channel count field.
     pub enabled_channel_count: u16,
+    /// Mirrors the CoreMIDI total channel count field.
     pub total_channel_count: u16,
+    /// Mirrors the CoreMIDI is enabled field.
     pub is_enabled: bool,
 }
 
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// Mirrors the CoreMIDI CI device info payload.
 pub struct CiDeviceInfo {
+    /// Mirrors the CoreMIDI device info field.
     pub device_info: Midi2DeviceInfo,
+    /// Mirrors the CoreMIDI muid field.
     pub muid: u32,
+    /// Mirrors the CoreMIDI supports protocol negotiation field.
     pub supports_protocol_negotiation: bool,
+    /// Mirrors the CoreMIDI supports profile configuration field.
     pub supports_profile_configuration: bool,
+    /// Mirrors the CoreMIDI supports property exchange field.
     pub supports_property_exchange: bool,
+    /// Mirrors the CoreMIDI supports process inquiry field.
     pub supports_process_inquiry: bool,
+    /// Mirrors the CoreMIDI max SysEx size field.
     pub max_sysex_size: usize,
+    /// Mirrors the CoreMIDI max property exchange requests field.
     pub max_property_exchange_requests: usize,
+    /// Mirrors the CoreMIDI device type field.
     pub device_type: u8,
+    /// Mirrors the CoreMIDI profiles field.
     pub profiles: Vec<CiProfileInfo>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// Mirrors the CoreMIDI legacy CI profile info payload.
 pub struct LegacyCiProfileInfo {
+    /// Mirrors the CoreMIDI name field.
     pub name: String,
     #[serde(rename = "profileID", alias = "profileId")]
+    /// Mirrors the CoreMIDI profile ID field.
     pub profile_id: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// Mirrors the CoreMIDI CI profile state info payload.
 pub struct CiProfileStateInfo {
+    /// Mirrors the CoreMIDI MIDI channel field.
     pub midi_channel: u8,
+    /// Mirrors the CoreMIDI enabled profiles field.
     pub enabled_profiles: Vec<LegacyCiProfileInfo>,
+    /// Mirrors the CoreMIDI disabled profiles field.
     pub disabled_profiles: Vec<LegacyCiProfileInfo>,
 }
 
 #[derive(Debug)]
+/// Mirrors the CoreMIDI CI profile state payload.
 pub struct CiProfileState {
     raw: *mut c_void,
 }
 
 impl CiProfileState {
+    /// Wraps the CoreMIDI new operation for `CiProfileState`.
     pub fn new(
         midi_channel: Option<u8>,
         enabled_profiles: &[LegacyCiProfileInfo],
@@ -209,6 +248,7 @@ impl CiProfileState {
         Ok(Self { raw })
     }
 
+    /// Wraps taking a CoreMIDI snapshot for `CiProfileState`.
     pub fn snapshot(&self) -> MidiResult<CiProfileStateInfo> {
         unsafe { private::take_json(cmr_ci_profile_state_json(self.raw)) }
     }
@@ -220,14 +260,17 @@ impl Drop for CiProfileState {
     }
 }
 
+/// Wraps the CoreMIDI CI device manager constants operation for `CiProfileState`.
 pub fn ci_device_manager_constants() -> MidiResult<CiDeviceManagerConstants> {
     unsafe { private::take_json(cmr_ci_device_manager_constants_json()) }
 }
 
+/// Wraps the CoreMIDI discovered CI devices operation for `CiProfileState`.
 pub fn discovered_ci_devices() -> MidiResult<Vec<CiDeviceInfo>> {
     unsafe { private::take_json(cmr_ci_devices_json()) }
 }
 
+/// Wraps the CoreMIDI legacy CI profile operation for `CiProfileState`.
 pub fn legacy_ci_profile(
     profile_id_bytes: &[u8],
     name: Option<&str>,

@@ -90,31 +90,37 @@ extern "C" {
     ) -> i32;
 }
 
+/// Callback signature matching the corresponding CoreMIDI receive proc.
 pub type MidiEventListReceiveProc =
     unsafe extern "C" fn(*mut c_void, *const ffi::MIDIEventList, *mut c_void);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Wraps `MIDIDeviceRef`.
 pub struct MidiDevice {
     raw: ffi::MIDIDeviceRef,
 }
 
 impl MidiDevice {
     #[must_use]
+    /// Wraps an existing `MIDIDeviceRef`.
     pub const unsafe fn from_raw(raw: ffi::MIDIDeviceRef) -> Self {
         Self { raw }
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIDeviceRef`.
     pub const fn raw(self) -> ffi::MIDIDeviceRef {
         self.raw
     }
 
     #[must_use]
+    /// Wraps `MIDIDeviceGetNumberOfEntities`.
     pub fn entity_count(self) -> usize {
         unsafe { ffi::MIDIDeviceGetNumberOfEntities(self.raw) }
     }
 
     #[must_use]
+    /// Wraps `MIDIDeviceGetEntity`.
     pub fn entity(self, index: usize) -> Option<MidiEntity> {
         let raw = unsafe { ffi::MIDIDeviceGetEntity(self.raw, index) };
         if raw == 0 {
@@ -125,6 +131,7 @@ impl MidiDevice {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI entities operation for `MidiDevice`.
     pub fn entities(self) -> MidiEntityIter {
         MidiEntityIter {
             device: self,
@@ -141,27 +148,32 @@ impl MidiObject for MidiDevice {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Wraps `MIDIEntityRef`.
 pub struct MidiEntity {
     raw: ffi::MIDIEntityRef,
 }
 
 impl MidiEntity {
     #[must_use]
+    /// Wraps an existing `MIDIEntityRef`.
     pub const unsafe fn from_raw(raw: ffi::MIDIEntityRef) -> Self {
         Self { raw }
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIEntityRef`.
     pub const fn raw(self) -> ffi::MIDIEntityRef {
         self.raw
     }
 
     #[must_use]
+    /// Wraps `MIDIEntityGetNumberOfSources`.
     pub fn source_count(self) -> usize {
         unsafe { ffi::MIDIEntityGetNumberOfSources(self.raw) }
     }
 
     #[must_use]
+    /// Wraps `MIDIEntityGetSource`.
     pub fn source(self, index: usize) -> Option<MidiEndpoint> {
         let raw = unsafe { ffi::MIDIEntityGetSource(self.raw, index) };
         if raw == 0 {
@@ -172,6 +184,7 @@ impl MidiEntity {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI sources operation for `MidiEntity`.
     pub fn sources(self) -> MidiEndpointIter {
         MidiEndpointIter {
             kind: EndpointIterKind::EntitySources(self),
@@ -182,11 +195,13 @@ impl MidiEntity {
     }
 
     #[must_use]
+    /// Wraps `MIDIEntityGetNumberOfDestinations`.
     pub fn destination_count(self) -> usize {
         unsafe { ffi::MIDIEntityGetNumberOfDestinations(self.raw) }
     }
 
     #[must_use]
+    /// Wraps `MIDIEntityGetDestination`.
     pub fn destination(self, index: usize) -> Option<MidiEndpoint> {
         let raw = unsafe { ffi::MIDIEntityGetDestination(self.raw, index) };
         if raw == 0 {
@@ -197,6 +212,7 @@ impl MidiEntity {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI destinations operation for `MidiEntity`.
     pub fn destinations(self) -> MidiEndpointIter {
         MidiEndpointIter {
             kind: EndpointIterKind::EntityDestinations(self),
@@ -206,6 +222,7 @@ impl MidiEntity {
         }
     }
 
+    /// Wraps `MIDIEntityGetDevice`.
     pub fn device(self) -> MidiResult<MidiDevice> {
         let mut raw = 0;
         result_from_status(unsafe { ffi::MIDIEntityGetDevice(self.raw, &mut raw) })?;
@@ -220,21 +237,25 @@ impl MidiObject for MidiEntity {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Wraps `MIDIEndpointRef`.
 pub struct MidiEndpoint {
     raw: ffi::MIDIEndpointRef,
 }
 
 impl MidiEndpoint {
     #[must_use]
+    /// Wraps an existing `MIDIEndpointRef`.
     pub const unsafe fn from_raw(raw: ffi::MIDIEndpointRef) -> Self {
         Self { raw }
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIEndpointRef`.
     pub const fn raw(self) -> ffi::MIDIEndpointRef {
         self.raw
     }
 
+    /// Wraps `MIDIEndpointGetEntity`.
     pub fn entity(self) -> MidiResult<Option<MidiEntity>> {
         let mut raw = 0;
         result_from_status(unsafe { ffi::MIDIEndpointGetEntity(self.raw, &mut raw) })?;
@@ -249,11 +270,13 @@ impl MidiObject for MidiEndpoint {
 }
 
 #[must_use]
+/// Wraps `MIDIGetNumberOfDevices`.
 pub fn device_count() -> usize {
     unsafe { ffi::MIDIGetNumberOfDevices() }
 }
 
 #[must_use]
+/// Wraps `MIDIGetDevice`.
 pub fn device(index: usize) -> Option<MidiDevice> {
     let raw = unsafe { ffi::MIDIGetDevice(index) };
     if raw == 0 {
@@ -264,6 +287,7 @@ pub fn device(index: usize) -> Option<MidiDevice> {
 }
 
 #[must_use]
+/// Wraps the CoreMIDI devices operation for `MidiEndpoint`.
 pub fn devices() -> MidiDeviceIter {
     MidiDeviceIter {
         index: 0,
@@ -273,11 +297,13 @@ pub fn devices() -> MidiDeviceIter {
 }
 
 #[must_use]
+/// Wraps `MIDIGetNumberOfSources`.
 pub fn source_count() -> usize {
     unsafe { ffi::MIDIGetNumberOfSources() }
 }
 
 #[must_use]
+/// Wraps `MIDIGetSource`.
 pub fn source(index: usize) -> Option<MidiEndpoint> {
     let raw = unsafe { ffi::MIDIGetSource(index) };
     if raw == 0 {
@@ -288,6 +314,7 @@ pub fn source(index: usize) -> Option<MidiEndpoint> {
 }
 
 #[must_use]
+/// Wraps the CoreMIDI sources operation for `MidiEndpoint`.
 pub fn sources() -> MidiEndpointIter {
     MidiEndpointIter {
         kind: EndpointIterKind::SystemSources,
@@ -298,11 +325,13 @@ pub fn sources() -> MidiEndpointIter {
 }
 
 #[must_use]
+/// Wraps `MIDIGetNumberOfDestinations`.
 pub fn destination_count() -> usize {
     unsafe { ffi::MIDIGetNumberOfDestinations() }
 }
 
 #[must_use]
+/// Wraps `MIDIGetDestination`.
 pub fn destination(index: usize) -> Option<MidiEndpoint> {
     let raw = unsafe { ffi::MIDIGetDestination(index) };
     if raw == 0 {
@@ -313,6 +342,7 @@ pub fn destination(index: usize) -> Option<MidiEndpoint> {
 }
 
 #[must_use]
+/// Wraps the CoreMIDI destinations operation for `MidiEndpoint`.
 pub fn destinations() -> MidiEndpointIter {
     MidiEndpointIter {
         kind: EndpointIterKind::SystemDestinations,
@@ -323,11 +353,13 @@ pub fn destinations() -> MidiEndpointIter {
 }
 
 #[must_use]
+/// Wraps `MIDIGetNumberOfExternalDevices`.
 pub fn external_device_count() -> usize {
     unsafe { ffi::MIDIGetNumberOfExternalDevices() }
 }
 
 #[must_use]
+/// Wraps `MIDIGetExternalDevice`.
 pub fn external_device(index: usize) -> Option<MidiDevice> {
     let raw = unsafe { ffi::MIDIGetExternalDevice(index) };
     if raw == 0 {
@@ -338,6 +370,7 @@ pub fn external_device(index: usize) -> Option<MidiDevice> {
 }
 
 #[must_use]
+/// Wraps the CoreMIDI external devices operation for `MidiEndpoint`.
 pub fn external_devices() -> MidiDeviceIter {
     MidiDeviceIter {
         index: 0,
@@ -347,6 +380,7 @@ pub fn external_devices() -> MidiDeviceIter {
 }
 
 #[derive(Debug, Clone)]
+/// Iterates CoreMIDI MIDI device values.
 pub struct MidiDeviceIter {
     index: usize,
     count: usize,
@@ -367,6 +401,7 @@ impl Iterator for MidiDeviceIter {
 }
 
 #[derive(Debug, Clone)]
+/// Iterates CoreMIDI MIDI entity values.
 pub struct MidiEntityIter {
     device: MidiDevice,
     index: usize,
@@ -394,6 +429,7 @@ enum EndpointIterKind {
     EntityDestinations(MidiEntity),
 }
 
+/// Iterates CoreMIDI MIDI endpoint values.
 pub struct MidiEndpointIter {
     kind: EndpointIterKind,
     index: usize,
@@ -430,6 +466,7 @@ impl Iterator for MidiEndpointIter {
 }
 
 #[derive(Debug)]
+/// Mirrors the CoreMIDI virtual source payload.
 pub struct VirtualSource {
     raw: ffi::MIDIEndpointRef,
 }
@@ -455,20 +492,24 @@ impl VirtualSource {
         Ok(Self { raw })
     }
 
+    /// Wraps `MIDIReceived`.
     pub fn received(&self, packets: &PacketListBuffer) -> MidiResult<()> {
         result_from_status(unsafe { ffi::MIDIReceived(self.raw, packets.as_ptr()) })
     }
 
+    /// Wraps `MIDIReceivedEventList`.
     pub fn received_event_list(&self, events: &EventListBuffer) -> MidiResult<()> {
         result_from_status(unsafe { ffi::MIDIReceivedEventList(self.raw, events.as_ptr()) })
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI endpoint operation for `VirtualSource`.
     pub const fn endpoint(&self) -> MidiEndpoint {
         unsafe { MidiEndpoint::from_raw(self.raw) }
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIEndpointRef`.
     pub const fn raw(&self) -> ffi::MIDIEndpointRef {
         self.raw
     }
@@ -487,6 +528,7 @@ impl MidiObject for VirtualSource {
 }
 
 #[derive(Debug)]
+/// Wraps `MIDIEndpointRef`.
 pub struct VirtualDestination {
     raw: ffi::MIDIEndpointRef,
 }
@@ -511,11 +553,13 @@ impl VirtualDestination {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI endpoint operation for `VirtualDestination`.
     pub const fn endpoint(&self) -> MidiEndpoint {
         unsafe { MidiEndpoint::from_raw(self.raw) }
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIEndpointRef`.
     pub const fn raw(&self) -> ffi::MIDIEndpointRef {
         self.raw
     }
@@ -535,88 +579,129 @@ impl MidiObject for VirtualDestination {
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// Wraps `MIDIEndpointRef`.
 pub struct Midi2DeviceInfo {
     #[serde(rename = "manufacturerID", alias = "manufacturerId")]
+    /// Mirrors the CoreMIDI manufacturer ID field.
     pub manufacturer_id: [u8; 3],
+    /// Mirrors the CoreMIDI family field.
     pub family: u16,
+    /// Mirrors the CoreMIDI model number field.
     pub model_number: u16,
+    /// Mirrors the CoreMIDI revision level field.
     pub revision_level: [u8; 4],
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// Mirrors the CoreMIDI UMP function block info payload.
 pub struct UmpFunctionBlockInfo {
+    /// Mirrors the CoreMIDI name field.
     pub name: String,
     #[serde(rename = "functionBlockID", alias = "functionBlockId")]
+    /// Mirrors the CoreMIDI function block ID field.
     pub function_block_id: u8,
+    /// Mirrors the CoreMIDI direction field.
     pub direction: i32,
+    /// Mirrors the CoreMIDI first group field.
     pub first_group: u8,
+    /// Mirrors the CoreMIDI total groups spanned field.
     pub total_groups_spanned: u8,
     #[serde(rename = "maxSysEx8Streams", alias = "maxSysex8Streams")]
+    /// Mirrors the CoreMIDI max sysex8 streams field.
     pub max_sysex8_streams: u8,
+    /// Mirrors the CoreMIDI midi1 info field.
     pub midi1_info: i32,
+    /// Mirrors the CoreMIDI ui hint field.
     pub ui_hint: i32,
+    /// Mirrors the CoreMIDI is enabled field.
     pub is_enabled: bool,
     #[serde(rename = "ciDeviceMUID", alias = "ciDeviceMuid")]
+    /// Mirrors the CoreMIDI CI device muid field.
     pub ci_device_muid: Option<u32>,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+/// Mirrors the CoreMIDI UMP endpoint info payload.
 pub struct UmpEndpointInfo {
+    /// Mirrors the CoreMIDI name field.
     pub name: String,
+    /// Mirrors the CoreMIDI MIDI protocol field.
     pub midi_protocol: i32,
     #[serde(rename = "supportedMIDIProtocols", alias = "supportedMidiProtocols")]
+    /// Mirrors the CoreMIDI supported MIDI protocols field.
     pub supported_midi_protocols: u8,
+    /// Mirrors the CoreMIDI MIDI destination field.
     pub midi_destination: u32,
+    /// Mirrors the CoreMIDI MIDI source field.
     pub midi_source: u32,
+    /// Mirrors the CoreMIDI device info field.
     pub device_info: Midi2DeviceInfo,
     #[serde(rename = "productInstanceID", alias = "productInstanceId")]
+    /// Mirrors the CoreMIDI product instance ID field.
     pub product_instance_id: String,
+    /// Mirrors the CoreMIDI has static function blocks field.
     pub has_static_function_blocks: bool,
     #[serde(
         rename = "hasJRTSReceiveCapability",
         alias = "hasJrtsReceiveCapability"
     )]
+    /// Mirrors the CoreMIDI has jrts receive capability field.
     pub has_jrts_receive_capability: bool,
     #[serde(
         rename = "hasJRTSTransmitCapability",
         alias = "hasJrtsTransmitCapability"
     )]
+    /// Mirrors the CoreMIDI has jrts transmit capability field.
     pub has_jrts_transmit_capability: bool,
+    /// Mirrors the CoreMIDI endpoint type field.
     pub endpoint_type: u8,
+    /// Mirrors the CoreMIDI function blocks field.
     pub function_blocks: Vec<UmpFunctionBlockInfo>,
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+/// Mirrors the CoreMIDI UMP endpoint manager constants payload.
 pub struct UmpEndpointManagerConstants {
+    /// Mirrors the CoreMIDI endpoint added notification field.
     pub endpoint_added_notification: String,
+    /// Mirrors the CoreMIDI endpoint removed notification field.
     pub endpoint_removed_notification: String,
+    /// Mirrors the CoreMIDI endpoint updated notification field.
     pub endpoint_updated_notification: String,
+    /// Mirrors the CoreMIDI function block updated notification field.
     pub function_block_updated_notification: String,
+    /// Mirrors the CoreMIDI endpoint object key field.
     pub endpoint_object_key: String,
+    /// Mirrors the CoreMIDI function block object key field.
     pub function_block_object_key: String,
 }
 
+/// Mirrors the CoreMIDI UMP endpoint manager payload.
 pub struct UmpEndpointManager;
 
 impl UmpEndpointManager {
+    /// Wraps the CoreMIDI constants operation for `UmpEndpointManager`.
     pub fn constants() -> MidiResult<UmpEndpointManagerConstants> {
         unsafe { private::take_json(cmr_ump_endpoint_manager_constants_json()) }
     }
 
+    /// Wraps the CoreMIDI endpoints operation for `UmpEndpointManager`.
     pub fn endpoints() -> MidiResult<Vec<UmpEndpointInfo>> {
         unsafe { private::take_json(cmr_ump_endpoint_manager_endpoints_json()) }
     }
 }
 
 #[derive(Debug)]
+/// Mirrors the CoreMIDI MIDI 2 device info handle payload.
 pub struct Midi2DeviceInfoHandle {
     raw: *mut c_void,
 }
 
 impl Midi2DeviceInfoHandle {
+    /// Wraps the CoreMIDI new operation for `Midi2DeviceInfoHandle`.
     pub fn new(
         manufacturer_id: [u8; 3],
         family: u16,
@@ -646,6 +731,7 @@ impl Midi2DeviceInfoHandle {
         Ok(Self { raw })
     }
 
+    /// Wraps taking a CoreMIDI snapshot for `Midi2DeviceInfoHandle`.
     pub fn snapshot(&self) -> MidiResult<Midi2DeviceInfo> {
         unsafe { private::take_json(cmr_ump_device_info_json(self.raw)) }
     }
@@ -662,12 +748,14 @@ impl Drop for Midi2DeviceInfoHandle {
 }
 
 #[derive(Debug)]
+/// Mirrors the CoreMIDI mutable UMP function block payload.
 pub struct MutableUmpFunctionBlock {
     raw: *mut c_void,
 }
 
 impl MutableUmpFunctionBlock {
     #[allow(clippy::too_many_arguments)]
+    /// Wraps the CoreMIDI new operation for `MutableUmpFunctionBlock`.
     pub fn new(
         name: &str,
         direction: i32,
@@ -701,10 +789,12 @@ impl MutableUmpFunctionBlock {
         Ok(Self { raw })
     }
 
+    /// Wraps taking a CoreMIDI snapshot for `MutableUmpFunctionBlock`.
     pub fn snapshot(&self) -> MidiResult<UmpFunctionBlockInfo> {
         unsafe { private::take_json(cmr_ump_function_block_json(self.raw)) }
     }
 
+    /// Wraps the CoreMIDI set enabled operation for `MutableUmpFunctionBlock`.
     pub fn set_enabled(&self, is_enabled: bool) -> MidiResult<()> {
         let mut error = ptr::null_mut();
         unsafe {
@@ -715,6 +805,7 @@ impl MutableUmpFunctionBlock {
         }
     }
 
+    /// Wraps the CoreMIDI set name operation for `MutableUmpFunctionBlock`.
     pub fn set_name(&self, name: &str) -> MidiResult<()> {
         let name = private::to_cstring(name)?;
         let mut error = ptr::null_mut();
@@ -726,6 +817,7 @@ impl MutableUmpFunctionBlock {
         }
     }
 
+    /// Wraps the CoreMIDI reconfigure operation for `MutableUmpFunctionBlock`.
     pub fn reconfigure(
         &self,
         first_group: u8,
@@ -761,11 +853,13 @@ impl Drop for MutableUmpFunctionBlock {
 }
 
 #[derive(Debug)]
+/// Mirrors the CoreMIDI mutable UMP endpoint payload.
 pub struct MutableUmpEndpoint {
     raw: *mut c_void,
 }
 
 impl MutableUmpEndpoint {
+    /// Wraps the CoreMIDI new operation for `MutableUmpEndpoint`.
     pub unsafe fn new(
         name: &str,
         device_info: &Midi2DeviceInfoHandle,
@@ -794,10 +888,12 @@ impl MutableUmpEndpoint {
         Ok(Self { raw })
     }
 
+    /// Wraps taking a CoreMIDI snapshot for `MutableUmpEndpoint`.
     pub fn snapshot(&self) -> MidiResult<UmpEndpointInfo> {
         unsafe { private::take_json(cmr_ump_endpoint_json(self.raw)) }
     }
 
+    /// Wraps the CoreMIDI set name operation for `MutableUmpEndpoint`.
     pub fn set_name(&self, name: &str) -> MidiResult<()> {
         let name = private::to_cstring(name)?;
         let mut error = ptr::null_mut();
@@ -809,6 +905,7 @@ impl MutableUmpEndpoint {
         }
     }
 
+    /// Wraps the CoreMIDI register function blocks operation for `MutableUmpEndpoint`.
     pub fn register_function_blocks(
         &self,
         function_blocks: &[MutableUmpFunctionBlock],
@@ -834,6 +931,7 @@ impl MutableUmpEndpoint {
         block.as_ptr()
     }
 
+    /// Wraps the CoreMIDI set enabled operation for `MutableUmpEndpoint`.
     pub fn set_enabled(&self, is_enabled: bool) -> MidiResult<()> {
         let mut error = ptr::null_mut();
         unsafe {

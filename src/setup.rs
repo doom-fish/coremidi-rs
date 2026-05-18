@@ -5,6 +5,7 @@ use crate::error::{result_from_status, MidiResult};
 use crate::ffi;
 use crate::packet::MidiProtocol;
 
+/// Wraps `MIDISetupGetCurrent`.
 pub fn current_setup_xml() -> MidiResult<Vec<u8>> {
     let mut setup = 0;
     result_from_status(unsafe { ffi::MIDISetupGetCurrent(&mut setup) })?;
@@ -30,6 +31,7 @@ pub fn current_setup_xml() -> MidiResult<Vec<u8>> {
     Ok(bytes)
 }
 
+/// Wraps `MIDIGetSerialPortOwner`.
 pub fn serial_port_owner(port_name: &str) -> MidiResult<Option<String>> {
     let port_name = OwnedCFString::new(port_name)?;
     let mut owner = core::ptr::null();
@@ -43,6 +45,7 @@ pub fn serial_port_owner(port_name: &str) -> MidiResult<Option<String>> {
     Ok(Some(value))
 }
 
+/// Wraps `MIDIGetSerialPortDrivers`.
 pub fn serial_port_drivers() -> MidiResult<Vec<String>> {
     let mut array = core::ptr::null();
     result_from_status(unsafe { ffi::MIDIGetSerialPortDrivers(&mut array) })?;
@@ -64,6 +67,7 @@ pub fn serial_port_drivers() -> MidiResult<Vec<String>> {
     Ok(drivers)
 }
 
+/// Wraps `MIDISetupAddDevice`.
 pub fn add_driver_device(device: DriverOwnedDevice) -> MidiResult<MidiDevice> {
     let raw = device.raw();
     result_from_status(unsafe { ffi::MIDISetupAddDevice(raw) })?;
@@ -71,10 +75,12 @@ pub fn add_driver_device(device: DriverOwnedDevice) -> MidiResult<MidiDevice> {
     Ok(unsafe { MidiDevice::from_raw(raw) })
 }
 
+/// Wraps `MIDISetupRemoveDevice`.
 pub fn remove_device(device: MidiDevice) -> MidiResult<()> {
     result_from_status(unsafe { ffi::MIDISetupRemoveDevice(device.raw()) })
 }
 
+/// Wraps `MIDIExternalDeviceCreate`.
 pub fn add_external_device_named(
     name: &str,
     manufacturer: &str,
@@ -96,10 +102,12 @@ pub fn add_external_device_named(
     Ok(unsafe { MidiDevice::from_raw(raw) })
 }
 
+/// Wraps `MIDISetupRemoveExternalDevice`.
 pub fn remove_external_device(device: MidiDevice) -> MidiResult<()> {
     result_from_status(unsafe { ffi::MIDISetupRemoveExternalDevice(device.raw()) })
 }
 
+/// Wraps `MIDIDeviceNewEntity`.
 pub fn device_new_entity(
     device: MidiDevice,
     name: &str,
@@ -124,6 +132,7 @@ pub fn device_new_entity(
     Ok(unsafe { MidiEntity::from_raw(raw) })
 }
 
+/// Wraps `MIDIDeviceAddEntity`.
 pub fn device_add_entity_deprecated(
     device: MidiDevice,
     name: &str,
@@ -146,10 +155,12 @@ pub fn device_add_entity_deprecated(
     Ok(unsafe { MidiEntity::from_raw(raw) })
 }
 
+/// Wraps `MIDIDeviceRemoveEntity`.
 pub fn device_remove_entity(device: MidiDevice, entity: MidiEntity) -> MidiResult<()> {
     result_from_status(unsafe { ffi::MIDIDeviceRemoveEntity(device.raw(), entity.raw()) })
 }
 
+/// Wraps `MIDIEntityAddOrRemoveEndpoints`.
 pub fn entity_set_endpoint_counts(
     entity: MidiEntity,
     num_source_endpoints: usize,

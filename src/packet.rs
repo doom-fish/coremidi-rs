@@ -9,18 +9,23 @@ use crate::ffi;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i32)]
+/// Wraps `MIDIProtocolID` values.
 pub enum MidiProtocol {
+    /// Wraps `kMIDIProtocol_1_0`.
     Midi1 = ffi::kMIDIProtocol_1_0,
+    /// Wraps `kMIDIProtocol_2_0`.
     Midi2 = ffi::kMIDIProtocol_2_0,
 }
 
 impl MidiProtocol {
     #[must_use]
+    /// Returns the wrapped `MIDIProtocolID`.
     pub const fn as_raw(self) -> ffi::MIDIProtocolID {
         self as ffi::MIDIProtocolID
     }
 
     #[must_use]
+    /// Wraps an existing `MIDIProtocolID`.
     pub const fn from_raw(raw: ffi::MIDIProtocolID) -> Option<Self> {
         match raw {
             ffi::kMIDIProtocol_1_0 => Some(Self::Midi1),
@@ -33,18 +38,21 @@ impl MidiProtocol {
 macro_rules! midi_enum {
     ($(#[$meta:meta])* $vis:vis enum $name:ident : $repr:ty { $($variant:ident = $value:expr),+ $(,)? }) => {
         $(#[$meta])*
+        /// Wraps matching CoreMIDI enum values.
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         #[repr($repr)]
         $vis enum $name {
-            $($variant = $value,)+
+            $(#[doc = "Wraps the matching CoreMIDI case."] $variant = $value,)+
         }
 
         impl $name {
+            /// Returns the raw CoreMIDI value for this enum.
             #[must_use]
             pub const fn as_raw(self) -> $repr {
                 self as $repr
             }
 
+            /// Converts a raw CoreMIDI value into this enum when it is known.
             #[must_use]
             pub const fn from_raw(raw: $repr) -> Option<Self> {
                 match raw {
@@ -59,32 +67,38 @@ macro_rules! midi_enum {
 macro_rules! midi_bitflags {
     ($(#[$meta:meta])* $vis:vis struct $name:ident($repr:ty) { $($flag:ident = $value:expr),+ $(,)? }) => {
         $(#[$meta])*
+        /// Wraps matching CoreMIDI option-bit values.
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
         $vis struct $name($repr);
 
         impl $name {
-            $(pub const $flag: Self = Self($value);)+
+            $(#[doc = "Wraps the matching CoreMIDI option flag."] pub const $flag: Self = Self($value);)+
 
+            /// Returns an empty set of CoreMIDI option flags.
             #[must_use]
             pub const fn empty() -> Self {
                 Self(0)
             }
 
+            /// Returns the raw CoreMIDI option bits.
             #[must_use]
             pub const fn bits(self) -> $repr {
                 self.0
             }
 
+            /// Wraps a raw CoreMIDI option bitset without clearing unknown bits.
             #[must_use]
             pub const fn from_bits_retain(bits: $repr) -> Self {
                 Self(bits)
             }
 
+            /// Tests whether the CoreMIDI option set contains another flag set.
             #[must_use]
             pub const fn contains(self, other: Self) -> bool {
                 (self.0 & other.0) == other.0
             }
 
+            /// Tests whether no CoreMIDI option flags are set.
             #[must_use]
             pub const fn is_empty(self) -> bool {
                 self.0 == 0
@@ -163,6 +177,7 @@ midi_enum!(
 
 impl MidiMessageType {
     #[must_use]
+    /// Wraps the CoreMIDI from up word operation for `MidiMessageType`.
     pub const fn from_up_word(word: u32) -> Option<Self> {
         Self::from_raw((word >> 28) & 0xF)
     }
@@ -206,6 +221,7 @@ midi_enum!(
 );
 
 impl MidiSystemStatus {
+    /// Aliases `ActiveSensing` for the matching CoreMIDI status value.
     pub const ACTIVE_SENDING: Self = Self::ActiveSensing;
 }
 
@@ -279,30 +295,36 @@ midi_bitflags!(
 );
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Wraps `MIDIMessage_64`.
 pub struct MidiMessage64(ffi::MIDIMessage_64);
 
 impl MidiMessage64 {
     #[must_use]
+    /// Wraps the CoreMIDI new operation for `MidiMessage64`.
     pub const fn new(word0: u32, word1: u32) -> Self {
         Self(ffi::MIDIMessage_64 { word0, word1 })
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIMessage_64`.
     pub const fn as_raw(self) -> ffi::MIDIMessage_64 {
         self.0
     }
 
     #[must_use]
+    /// Wraps an existing `MIDIMessage_64`.
     pub const fn from_raw(raw: ffi::MIDIMessage_64) -> Self {
         Self(raw)
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI words operation for `MidiMessage64`.
     pub const fn words(self) -> [u32; 2] {
         [self.0.word0, self.0.word1]
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI message type operation for `MidiMessage64`.
     pub fn message_type(self) -> Option<MidiMessageType> {
         MidiMessageType::from_up_word(self.0.word0)
     }
@@ -333,10 +355,12 @@ impl From<MidiMessage64> for [u32; 2] {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Wraps `MIDIMessage_96`.
 pub struct MidiMessage96(ffi::MIDIMessage_96);
 
 impl MidiMessage96 {
     #[must_use]
+    /// Wraps the CoreMIDI new operation for `MidiMessage96`.
     pub const fn new(word0: u32, word1: u32, word2: u32) -> Self {
         Self(ffi::MIDIMessage_96 {
             word0,
@@ -346,21 +370,25 @@ impl MidiMessage96 {
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIMessage_96`.
     pub const fn as_raw(self) -> ffi::MIDIMessage_96 {
         self.0
     }
 
     #[must_use]
+    /// Wraps an existing `MIDIMessage_96`.
     pub const fn from_raw(raw: ffi::MIDIMessage_96) -> Self {
         Self(raw)
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI words operation for `MidiMessage96`.
     pub const fn words(self) -> [u32; 3] {
         [self.0.word0, self.0.word1, self.0.word2]
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI message type operation for `MidiMessage96`.
     pub fn message_type(self) -> Option<MidiMessageType> {
         MidiMessageType::from_up_word(self.0.word0)
     }
@@ -391,10 +419,12 @@ impl From<MidiMessage96> for [u32; 3] {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Wraps `MIDIMessage_128`.
 pub struct MidiMessage128(ffi::MIDIMessage_128);
 
 impl MidiMessage128 {
     #[must_use]
+    /// Wraps the CoreMIDI new operation for `MidiMessage128`.
     pub const fn new(word0: u32, word1: u32, word2: u32, word3: u32) -> Self {
         Self(ffi::MIDIMessage_128 {
             word0,
@@ -405,21 +435,25 @@ impl MidiMessage128 {
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIMessage_128`.
     pub const fn as_raw(self) -> ffi::MIDIMessage_128 {
         self.0
     }
 
     #[must_use]
+    /// Wraps an existing `MIDIMessage_128`.
     pub const fn from_raw(raw: ffi::MIDIMessage_128) -> Self {
         Self(raw)
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI words operation for `MidiMessage128`.
     pub const fn words(self) -> [u32; 4] {
         [self.0.word0, self.0.word1, self.0.word2, self.0.word3]
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI message type operation for `MidiMessage128`.
     pub fn message_type(self) -> Option<MidiMessageType> {
         MidiMessageType::from_up_word(self.0.word0)
     }
@@ -450,6 +484,7 @@ impl From<MidiMessage128> for [u32; 4] {
 }
 
 #[derive(Debug, Clone)]
+/// Wraps `MIDIPacketList`.
 pub struct PacketListBuffer {
     storage: Vec<u64>,
     current_packet: *mut ffi::MIDIPacket,
@@ -457,6 +492,7 @@ pub struct PacketListBuffer {
 
 impl PacketListBuffer {
     #[must_use]
+    /// Wraps `MIDIPacketListInit`.
     pub fn with_capacity(capacity_bytes: usize) -> Self {
         let capacity_bytes = capacity_bytes.max(size_of::<ffi::MIDIPacketList>());
         let words = capacity_bytes.div_ceil(size_of::<u64>()).max(1);
@@ -468,15 +504,18 @@ impl PacketListBuffer {
         }
     }
 
+    /// Wraps `MIDIPacketListInit`.
     pub fn clear(&mut self) {
         self.current_packet = unsafe { ffi::MIDIPacketListInit(self.storage.as_mut_ptr().cast()) };
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI capacity bytes operation for `PacketListBuffer`.
     pub fn capacity_bytes(&self) -> usize {
         self.storage.len() * size_of::<u64>()
     }
 
+    /// Wraps `MIDIPacketListAdd`.
     pub fn add_packet(&mut self, timestamp: ffi::MIDITimeStamp, data: &[u8]) -> MidiResult<()> {
         if data.len() > usize::from(u16::MAX) {
             return Err(MidiError::InvalidArgument(
@@ -506,17 +545,20 @@ impl PacketListBuffer {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI as ptr operation for `PacketListBuffer`.
     pub fn as_ptr(&self) -> *const ffi::MIDIPacketList {
         self.storage.as_ptr().cast()
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI as packet list operation for `PacketListBuffer`.
     pub fn as_packet_list(&self) -> PacketListRef<'_> {
         unsafe { PacketListRef::from_ptr(self.as_ptr()) }
     }
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Wraps `MIDIPacketList`.
 pub struct PacketListRef<'a> {
     ptr: *const ffi::MIDIPacketList,
     _marker: PhantomData<&'a ffi::MIDIPacketList>,
@@ -524,6 +566,7 @@ pub struct PacketListRef<'a> {
 
 impl<'a> PacketListRef<'a> {
     #[must_use]
+    /// Wraps the CoreMIDI from ptr operation for `PacketListRef`.
     pub const unsafe fn from_ptr(ptr: *const ffi::MIDIPacketList) -> Self {
         Self {
             ptr,
@@ -532,11 +575,13 @@ impl<'a> PacketListRef<'a> {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI packet count operation for `PacketListRef`.
     pub fn packet_count(self) -> u32 {
         unsafe { ptr::addr_of!((*self.ptr).numPackets).read_unaligned() }
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI iter operation for `PacketListRef`.
     pub fn iter(self) -> PacketIter<'a> {
         PacketIter {
             next_packet: unsafe { ptr::addr_of!((*self.ptr).packet).cast() },
@@ -546,12 +591,14 @@ impl<'a> PacketListRef<'a> {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI as ptr operation for `PacketListRef`.
     pub const fn as_ptr(self) -> *const ffi::MIDIPacketList {
         self.ptr
     }
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Wraps `MIDIPacket`.
 pub struct MidiPacketRef<'a> {
     ptr: *const ffi::MIDIPacket,
     _marker: PhantomData<&'a ffi::MIDIPacket>,
@@ -559,6 +606,7 @@ pub struct MidiPacketRef<'a> {
 
 impl<'a> MidiPacketRef<'a> {
     #[must_use]
+    /// Wraps the CoreMIDI from ptr operation for `MidiPacketRef`.
     pub const unsafe fn from_ptr(ptr: *const ffi::MIDIPacket) -> Self {
         Self {
             ptr,
@@ -567,21 +615,25 @@ impl<'a> MidiPacketRef<'a> {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI timestamp operation for `MidiPacketRef`.
     pub fn timestamp(self) -> ffi::MIDITimeStamp {
         unsafe { ptr::addr_of!((*self.ptr).timeStamp).read_unaligned() }
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI len operation for `MidiPacketRef`.
     pub fn len(self) -> usize {
         usize::from(unsafe { ptr::addr_of!((*self.ptr).length).read_unaligned() })
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI is empty operation for `MidiPacketRef`.
     pub fn is_empty(self) -> bool {
         self.len() == 0
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI bytes operation for `MidiPacketRef`.
     pub fn bytes(self) -> &'a [u8] {
         let len = self.len();
         let data_ptr = unsafe { ptr::addr_of!((*self.ptr).data).cast::<u8>() };
@@ -590,6 +642,7 @@ impl<'a> MidiPacketRef<'a> {
 }
 
 #[derive(Debug, Clone)]
+/// Iterates CoreMIDI packet values.
 pub struct PacketIter<'a> {
     next_packet: *const ffi::MIDIPacket,
     remaining: u32,
@@ -612,6 +665,7 @@ impl<'a> Iterator for PacketIter<'a> {
 }
 
 #[derive(Debug, Clone)]
+/// Wraps `MIDIEventList`.
 pub struct EventListBuffer {
     storage: Vec<u64>,
     current_packet: *mut ffi::MIDIEventPacket,
@@ -620,6 +674,7 @@ pub struct EventListBuffer {
 
 impl EventListBuffer {
     #[must_use]
+    /// Wraps `MIDIEventListInit`.
     pub fn with_capacity(protocol: MidiProtocol, capacity_bytes: usize) -> Self {
         let capacity_bytes = capacity_bytes.max(size_of::<ffi::MIDIEventList>());
         let words = capacity_bytes.div_ceil(size_of::<u64>()).max(1);
@@ -633,6 +688,7 @@ impl EventListBuffer {
         }
     }
 
+    /// Wraps `MIDIEventListInit`.
     pub fn clear(&mut self) {
         self.current_packet = unsafe {
             ffi::MIDIEventListInit(self.storage.as_mut_ptr().cast(), self.protocol.as_raw())
@@ -640,15 +696,18 @@ impl EventListBuffer {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI protocol operation for `EventListBuffer`.
     pub const fn protocol(&self) -> MidiProtocol {
         self.protocol
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI capacity bytes operation for `EventListBuffer`.
     pub fn capacity_bytes(&self) -> usize {
         self.storage.len() * size_of::<u64>()
     }
 
+    /// Wraps `MIDIEventListAdd`.
     pub fn add_packet_words(
         &mut self,
         timestamp: ffi::MIDITimeStamp,
@@ -676,17 +735,20 @@ impl EventListBuffer {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI as ptr operation for `EventListBuffer`.
     pub fn as_ptr(&self) -> *const ffi::MIDIEventList {
         self.storage.as_ptr().cast()
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI as event list operation for `EventListBuffer`.
     pub fn as_event_list(&self) -> EventListRef<'_> {
         unsafe { EventListRef::from_ptr(self.as_ptr()) }
     }
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Wraps `MIDIEventList`.
 pub struct EventListRef<'a> {
     ptr: *const ffi::MIDIEventList,
     _marker: PhantomData<&'a ffi::MIDIEventList>,
@@ -694,6 +756,7 @@ pub struct EventListRef<'a> {
 
 impl<'a> EventListRef<'a> {
     #[must_use]
+    /// Wraps the CoreMIDI from ptr operation for `EventListRef`.
     pub const unsafe fn from_ptr(ptr: *const ffi::MIDIEventList) -> Self {
         Self {
             ptr,
@@ -702,17 +765,20 @@ impl<'a> EventListRef<'a> {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI packet count operation for `EventListRef`.
     pub fn packet_count(self) -> u32 {
         unsafe { ptr::addr_of!((*self.ptr).numPackets).read_unaligned() }
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI protocol operation for `EventListRef`.
     pub fn protocol(self) -> Option<MidiProtocol> {
         let raw = unsafe { ptr::addr_of!((*self.ptr).protocol).read_unaligned() };
         MidiProtocol::from_raw(raw)
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI iter operation for `EventListRef`.
     pub fn iter(self) -> EventIter<'a> {
         EventIter {
             next_packet: unsafe { ptr::addr_of!((*self.ptr).packet).cast() },
@@ -722,12 +788,14 @@ impl<'a> EventListRef<'a> {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI as ptr operation for `EventListRef`.
     pub const fn as_ptr(self) -> *const ffi::MIDIEventList {
         self.ptr
     }
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Wraps `MIDIEventPacket`.
 pub struct MidiEventPacketRef<'a> {
     ptr: *const ffi::MIDIEventPacket,
     _marker: PhantomData<&'a ffi::MIDIEventPacket>,
@@ -735,6 +803,7 @@ pub struct MidiEventPacketRef<'a> {
 
 impl<'a> MidiEventPacketRef<'a> {
     #[must_use]
+    /// Wraps the CoreMIDI from ptr operation for `MidiEventPacketRef`.
     pub const unsafe fn from_ptr(ptr: *const ffi::MIDIEventPacket) -> Self {
         Self {
             ptr,
@@ -743,17 +812,20 @@ impl<'a> MidiEventPacketRef<'a> {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI timestamp operation for `MidiEventPacketRef`.
     pub fn timestamp(self) -> ffi::MIDITimeStamp {
         unsafe { ptr::addr_of!((*self.ptr).timeStamp).read_unaligned() }
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI word count operation for `MidiEventPacketRef`.
     pub fn word_count(self) -> usize {
         usize::try_from(unsafe { ptr::addr_of!((*self.ptr).wordCount).read_unaligned() })
             .unwrap_or(0)
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI words operation for `MidiEventPacketRef`.
     pub fn words(self) -> &'a [u32] {
         let count = self.word_count();
         let words_ptr = unsafe { ptr::addr_of!((*self.ptr).words).cast::<u32>() };
@@ -761,6 +833,7 @@ impl<'a> MidiEventPacketRef<'a> {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI message type operation for `MidiEventPacketRef`.
     pub fn message_type(self) -> Option<MidiMessageType> {
         self.words()
             .first()
@@ -769,6 +842,7 @@ impl<'a> MidiEventPacketRef<'a> {
 }
 
 #[derive(Debug, Clone)]
+/// Iterates CoreMIDI event values.
 pub struct EventIter<'a> {
     next_packet: *const ffi::MIDIEventPacket,
     remaining: u32,

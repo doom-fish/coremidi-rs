@@ -6,19 +6,29 @@ use crate::property::MidiObjectType;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i32)]
+/// Wraps `MIDINotification.messageID` values.
 pub enum NotificationMessageId {
+    /// Wraps `kMIDIMsgSetupChanged`.
     SetupChanged = ffi::kMIDIMsgSetupChanged,
+    /// Wraps `kMIDIMsgObjectAdded`.
     ObjectAdded = ffi::kMIDIMsgObjectAdded,
+    /// Wraps `kMIDIMsgObjectRemoved`.
     ObjectRemoved = ffi::kMIDIMsgObjectRemoved,
+    /// Wraps `kMIDIMsgPropertyChanged`.
     PropertyChanged = ffi::kMIDIMsgPropertyChanged,
+    /// Wraps `kMIDIMsgThruConnectionsChanged`.
     ThruConnectionsChanged = ffi::kMIDIMsgThruConnectionsChanged,
+    /// Wraps `kMIDIMsgSerialPortOwnerChanged`.
     SerialPortOwnerChanged = ffi::kMIDIMsgSerialPortOwnerChanged,
+    /// Wraps `kMIDIMsgIOError`.
     IoError = ffi::kMIDIMsgIOError,
+    /// Wraps `kMIDIMsgInternalStart`.
     InternalStart = ffi::kMIDIMsgInternalStart,
 }
 
 impl NotificationMessageId {
     #[must_use]
+    /// Wraps an existing `MIDINotification.messageID`.
     pub const fn from_raw(raw: i32) -> Option<Self> {
         match raw {
             ffi::kMIDIMsgSetupChanged => Some(Self::SetupChanged),
@@ -36,33 +46,57 @@ impl NotificationMessageId {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
+/// Wraps `MIDINotification` values.
 pub enum Notification {
+    /// Wraps the CoreMIDI setup changed case.
     SetupChanged,
+    /// Wraps the CoreMIDI object added case.
     ObjectAdded {
+        /// Mirrors the matching CoreMIDI field.
         parent: Option<ffi::MIDIObjectRef>,
+        /// Mirrors the matching CoreMIDI field.
         parent_type: Option<MidiObjectType>,
+        /// Mirrors the matching CoreMIDI field.
         child: ffi::MIDIObjectRef,
+        /// Mirrors the matching CoreMIDI field.
         child_type: MidiObjectType,
     },
+    /// Wraps the CoreMIDI object removed case.
     ObjectRemoved {
+        /// Mirrors the matching CoreMIDI field.
         parent: Option<ffi::MIDIObjectRef>,
+        /// Mirrors the matching CoreMIDI field.
         parent_type: Option<MidiObjectType>,
+        /// Mirrors the matching CoreMIDI field.
         child: ffi::MIDIObjectRef,
+        /// Mirrors the matching CoreMIDI field.
         child_type: MidiObjectType,
     },
+    /// Wraps the CoreMIDI property changed case.
     PropertyChanged {
+        /// Mirrors the matching CoreMIDI field.
         object: ffi::MIDIObjectRef,
+        /// Mirrors the matching CoreMIDI field.
         object_type: MidiObjectType,
+        /// Mirrors the matching CoreMIDI field.
         property_name: String,
     },
+    /// Wraps the CoreMIDI thru connections changed case.
     ThruConnectionsChanged,
+    /// Wraps the CoreMIDI serial port owner changed case.
     SerialPortOwnerChanged,
+    /// Wraps the CoreMIDI IO error case.
     IoError {
+        /// Mirrors the matching CoreMIDI field.
         driver_device: ffi::MIDIDeviceRef,
+        /// Mirrors the matching CoreMIDI field.
         error_code: ffi::OSStatus,
     },
+    /// Wraps an unknown CoreMIDI value.
     Unknown {
+        /// Mirrors the matching CoreMIDI field.
         message_id: i32,
+        /// Mirrors the matching CoreMIDI field.
         message_size: u32,
     },
 }
@@ -83,6 +117,7 @@ struct NotificationPayload {
 }
 
 impl Notification {
+    /// Wraps CoreMIDI notification decoding from the bridge JSON payload.
     pub fn from_json_str(payload: &str) -> MidiResult<Self> {
         let payload: NotificationPayload = serde_json::from_str(payload)
             .map_err(|error| MidiError::Serialization(error.to_string()))?;
@@ -90,6 +125,7 @@ impl Notification {
     }
 
     #[allow(clippy::cast_ptr_alignment)]
+    /// Wraps decoding a `MIDINotification` pointer.
     pub unsafe fn from_raw_ptr(message: *const ffi::MIDINotification) -> MidiResult<Self> {
         if message.is_null() {
             return Err(MidiError::InvalidArgument(

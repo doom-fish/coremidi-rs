@@ -18,9 +18,11 @@ extern "C" {
     ) -> i32;
 }
 
+/// Callback signature matching the corresponding CoreMIDI receive proc.
 pub type MidiProtocolReadProc = unsafe extern "C" fn(*const ffi::MIDIEventList, *mut c_void);
 
 #[derive(Debug)]
+/// Wraps `MIDIPortRef`.
 pub struct MidiInputPort {
     raw: ffi::MIDIPortRef,
     protocol_mode: bool,
@@ -73,6 +75,7 @@ impl MidiInputPort {
         })
     }
 
+    /// Wraps `MIDIPortConnectSource`.
     pub unsafe fn connect_source(
         &self,
         source: MidiEndpoint,
@@ -85,6 +88,7 @@ impl MidiInputPort {
         ))
     }
 
+    /// Wraps `MIDIPortConnectSource`.
     pub unsafe fn connect_source_with_protocol_callback(
         &self,
         source: MidiEndpoint,
@@ -117,11 +121,13 @@ impl MidiInputPort {
         }
     }
 
+    /// Wraps `MIDIPortDisconnectSource`.
     pub fn disconnect_source(&self, source: MidiEndpoint) -> MidiResult<()> {
         result_from_status(unsafe { ffi::MIDIPortDisconnectSource(self.raw, source.raw()) })
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIPortRef`.
     pub const fn raw(&self) -> ffi::MIDIPortRef {
         self.raw
     }
@@ -154,6 +160,7 @@ impl MidiObject for MidiInputPort {
 }
 
 #[derive(Debug)]
+/// Wraps `MIDIPortRef`.
 pub struct MidiOutputPort {
     raw: ffi::MIDIPortRef,
 }
@@ -166,15 +173,18 @@ impl MidiOutputPort {
         Ok(Self { raw })
     }
 
+    /// Wraps `MIDISend`.
     pub fn send(&self, dest: MidiEndpoint, packets: &PacketListBuffer) -> MidiResult<()> {
         result_from_status(unsafe { ffi::MIDISend(self.raw, dest.raw(), packets.as_ptr()) })
     }
 
+    /// Wraps `MIDISendEventList`.
     pub fn send_event_list(&self, dest: MidiEndpoint, events: &EventListBuffer) -> MidiResult<()> {
         result_from_status(unsafe { ffi::MIDISendEventList(self.raw, dest.raw(), events.as_ptr()) })
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIPortRef`.
     pub const fn raw(&self) -> ffi::MIDIPortRef {
         self.raw
     }
@@ -192,6 +202,7 @@ impl MidiObject for MidiOutputPort {
     }
 }
 
+/// Wraps the CoreMIDI flush output operation for `MidiOutputPort`.
 pub fn flush_output(destination: Option<MidiEndpoint>) -> MidiResult<()> {
     let mut error = ptr::null_mut();
     unsafe {

@@ -2,17 +2,31 @@ use core::fmt;
 
 use crate::ffi;
 
+/// Result alias for CoreMIDI wrapper calls.
 pub type MidiResult<T> = Result<T, MidiError>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
+/// Wraps `CoreMIDI error handling` values.
 pub enum MidiError {
+    /// Wraps the CoreMIDI invalid argument case.
     InvalidArgument(String),
+    /// Wraps the CoreMIDI core foundation case.
     CoreFoundation(String),
+    /// Wraps the CoreMIDI bridge case.
     Bridge(String),
+    /// Wraps the CoreMIDI serialization case.
     Serialization(String),
-    BufferTooSmall { requested: usize, available: usize },
+    /// Wraps the CoreMIDI buffer too small case.
+    BufferTooSmall {
+        /// Wraps the requested CoreMIDI byte count.
+        requested: usize,
+        /// Wraps the available CoreMIDI byte count.
+        available: usize,
+    },
+    /// Wraps the CoreMIDI unsupported case.
     Unsupported(String),
+    /// Wraps the CoreMIDI status case.
     Status(MidiStatus),
 }
 
@@ -42,28 +56,47 @@ impl std::error::Error for MidiError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
+/// Wraps `OSStatus` values.
 pub enum MidiStatus {
+    /// Wraps the CoreMIDI invalid client case.
     InvalidClient,
+    /// Wraps the CoreMIDI invalid port case.
     InvalidPort,
+    /// Wraps the CoreMIDI wrong endpoint type case.
     WrongEndpointType,
+    /// Wraps the CoreMIDI no connection case.
     NoConnection,
+    /// Wraps the CoreMIDI unknown endpoint case.
     UnknownEndpoint,
+    /// Wraps the CoreMIDI unknown property case.
     UnknownProperty,
+    /// Wraps the CoreMIDI wrong property type case.
     WrongPropertyType,
+    /// Wraps the CoreMIDI no current setup case.
     NoCurrentSetup,
+    /// Wraps the CoreMIDI message send case.
     MessageSend,
+    /// Wraps the CoreMIDI server start case.
     ServerStart,
+    /// Wraps the CoreMIDI setup format case.
     SetupFormat,
+    /// Wraps the CoreMIDI wrong thread case.
     WrongThread,
+    /// Wraps the CoreMIDI object not found case.
     ObjectNotFound,
+    /// Wraps the CoreMIDI ID not unique case.
     IdNotUnique,
+    /// Wraps the CoreMIDI not permitted case.
     NotPermitted,
+    /// Wraps the CoreMIDI unknown error case.
     UnknownError,
+    /// Wraps `OSStatus`.
     OsStatus(ffi::OSStatus),
 }
 
 impl MidiStatus {
     #[must_use]
+    /// Wraps an existing `OSStatus`.
     pub const fn from_raw(status: ffi::OSStatus) -> Self {
         match status {
             ffi::kMIDIInvalidClient => Self::InvalidClient,
@@ -87,6 +120,7 @@ impl MidiStatus {
     }
 
     #[must_use]
+    /// Returns the wrapped `OSStatus`.
     pub const fn raw(self) -> ffi::OSStatus {
         match self {
             Self::InvalidClient => ffi::kMIDIInvalidClient,

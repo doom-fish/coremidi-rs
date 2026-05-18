@@ -39,19 +39,29 @@ extern "C" {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u16)]
+/// Wraps CoreMIDI MIDI transform kind values.
 pub enum MidiTransformKind {
+    /// Wraps `kMIDITransform_None`.
     None = ffi::kMIDITransform_None,
+    /// Wraps `kMIDITransform_FilterOut`.
     FilterOut = ffi::kMIDITransform_FilterOut,
+    /// Wraps `kMIDITransform_MapControl`.
     MapControl = ffi::kMIDITransform_MapControl,
+    /// Wraps `kMIDITransform_Add`.
     Add = ffi::kMIDITransform_Add,
+    /// Wraps `kMIDITransform_Scale`.
     Scale = ffi::kMIDITransform_Scale,
+    /// Wraps `kMIDITransform_MinValue`.
     MinValue = ffi::kMIDITransform_MinValue,
+    /// Wraps `kMIDITransform_MaxValue`.
     MaxValue = ffi::kMIDITransform_MaxValue,
+    /// Wraps `kMIDITransform_MapValue`.
     MapValue = ffi::kMIDITransform_MapValue,
 }
 
 impl MidiTransformKind {
     #[must_use]
+    /// Wraps the CoreMIDI from raw operation for `MidiTransformKind`.
     pub const fn from_raw(raw: u16) -> Option<Self> {
         match raw {
             ffi::kMIDITransform_None => Some(Self::None),
@@ -69,17 +79,25 @@ impl MidiTransformKind {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
+/// Wraps CoreMIDI MIDI control type values.
 pub enum MidiControlType {
+    /// Wraps `kMIDIControlType_7Bit`.
     SevenBit = ffi::kMIDIControlType_7Bit,
+    /// Wraps `kMIDIControlType_14Bit`.
     FourteenBit = ffi::kMIDIControlType_14Bit,
+    /// Wraps `kMIDIControlType_7BitRPN`.
     SevenBitRpn = ffi::kMIDIControlType_7BitRPN,
+    /// Wraps `kMIDIControlType_14BitRPN`.
     FourteenBitRpn = ffi::kMIDIControlType_14BitRPN,
+    /// Wraps `kMIDIControlType_7BitNRPN`.
     SevenBitNrpn = ffi::kMIDIControlType_7BitNRPN,
+    /// Wraps `kMIDIControlType_14BitNRPN`.
     FourteenBitNrpn = ffi::kMIDIControlType_14BitNRPN,
 }
 
 impl MidiControlType {
     #[must_use]
+    /// Wraps the CoreMIDI from raw operation for `MidiControlType`.
     pub const fn from_raw(raw: u8) -> Option<Self> {
         match raw {
             ffi::kMIDIControlType_7Bit => Some(Self::SevenBit),
@@ -94,13 +112,17 @@ impl MidiControlType {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Wraps `MIDITransform`.
 pub struct MidiTransform {
+    /// Mirrors the CoreMIDI kind field.
     pub kind: MidiTransformKind,
+    /// Mirrors the CoreMIDI param field.
     pub param: i16,
 }
 
 impl MidiTransform {
     #[must_use]
+    /// Wraps the CoreMIDI identity operation for `MidiTransform`.
     pub const fn identity() -> Self {
         Self {
             kind: MidiTransformKind::None,
@@ -109,6 +131,7 @@ impl MidiTransform {
     }
 
     #[must_use]
+    /// Returns the raw CoreMIDI representation for this wrapper.
     pub const fn into_raw(self) -> ffi::MIDITransform {
         ffi::MIDITransform {
             transform: self.kind as u16,
@@ -116,6 +139,7 @@ impl MidiTransform {
         }
     }
 
+    /// Wraps an existing `MIDITransform`.
     pub fn from_raw(raw: ffi::MIDITransform) -> MidiResult<Self> {
         Ok(Self {
             kind: MidiTransformKind::from_raw(raw.transform).ok_or_else(|| {
@@ -127,14 +151,20 @@ impl MidiTransform {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Wraps `MIDIControlTransform`.
 pub struct MidiControlTransform {
+    /// Mirrors the CoreMIDI control type field.
     pub control_type: MidiControlType,
+    /// Mirrors the CoreMIDI remapped control type field.
     pub remapped_control_type: MidiControlType,
+    /// Mirrors the CoreMIDI control number field.
     pub control_number: u16,
+    /// Mirrors the CoreMIDI transform field.
     pub transform: MidiTransform,
 }
 
 impl MidiControlTransform {
+    /// Wraps an existing `MIDIControlTransform`.
     pub fn from_raw(raw: ffi::MIDIControlTransform) -> MidiResult<Self> {
         Ok(Self {
             control_type: MidiControlType::from_raw(raw.controlType).ok_or_else(|| {
@@ -157,6 +187,7 @@ impl MidiControlTransform {
     }
 
     #[must_use]
+    /// Returns the raw CoreMIDI representation for this wrapper.
     pub const fn into_raw(self) -> ffi::MIDIControlTransform {
         ffi::MIDIControlTransform {
             controlType: self.control_type as u8,
@@ -169,13 +200,17 @@ impl MidiControlTransform {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Wraps `MIDIThruConnectionEndpoint`.
 pub struct ThruConnectionEndpoint {
+    /// Mirrors the CoreMIDI endpoint ref field.
     pub endpoint_ref: ffi::MIDIEndpointRef,
+    /// Mirrors the CoreMIDI unique ID field.
     pub unique_id: ffi::MIDIUniqueID,
 }
 
 impl ThruConnectionEndpoint {
     #[must_use]
+    /// Wraps an existing `MIDIThruConnectionEndpoint`.
     pub const fn from_raw(raw: ffi::MIDIThruConnectionEndpoint) -> Self {
         Self {
             endpoint_ref: raw.endpointRef,
@@ -184,6 +219,7 @@ impl ThruConnectionEndpoint {
     }
 
     #[must_use]
+    /// Returns the raw CoreMIDI representation for this wrapper.
     pub const fn into_raw(self) -> ffi::MIDIThruConnectionEndpoint {
         ffi::MIDIThruConnectionEndpoint {
             endpointRef: self.endpoint_ref,
@@ -194,27 +230,49 @@ impl ThruConnectionEndpoint {
 
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// Wraps `MIDIThruConnectionParams`.
 pub struct ThruConnectionParams {
+    /// Mirrors the CoreMIDI version field.
     pub version: u32,
+    /// Mirrors the CoreMIDI sources field.
     pub sources: Vec<ThruConnectionEndpoint>,
+    /// Mirrors the CoreMIDI destinations field.
     pub destinations: Vec<ThruConnectionEndpoint>,
+    /// Mirrors the CoreMIDI channel map field.
     pub channel_map: [u8; 16],
+    /// Mirrors the CoreMIDI low velocity field.
     pub low_velocity: u8,
+    /// Mirrors the CoreMIDI high velocity field.
     pub high_velocity: u8,
+    /// Mirrors the CoreMIDI low note field.
     pub low_note: u8,
+    /// Mirrors the CoreMIDI high note field.
     pub high_note: u8,
+    /// Mirrors the CoreMIDI note number field.
     pub note_number: MidiTransform,
+    /// Mirrors the CoreMIDI velocity field.
     pub velocity: MidiTransform,
+    /// Mirrors the CoreMIDI key pressure field.
     pub key_pressure: MidiTransform,
+    /// Mirrors the CoreMIDI channel pressure field.
     pub channel_pressure: MidiTransform,
+    /// Mirrors the CoreMIDI program change field.
     pub program_change: MidiTransform,
+    /// Mirrors the CoreMIDI pitch bend field.
     pub pitch_bend: MidiTransform,
+    /// Mirrors the CoreMIDI filter out SysEx field.
     pub filter_out_sysex: bool,
+    /// Mirrors the CoreMIDI filter out MTC field.
     pub filter_out_mtc: bool,
+    /// Mirrors the CoreMIDI filter out beat clock field.
     pub filter_out_beat_clock: bool,
+    /// Mirrors the CoreMIDI filter out tune request field.
     pub filter_out_tune_request: bool,
+    /// Mirrors the CoreMIDI filter out all controls field.
     pub filter_out_all_controls: bool,
+    /// Mirrors the CoreMIDI control transforms field.
     pub control_transforms: Vec<MidiControlTransform>,
+    /// Mirrors the CoreMIDI maps field.
     pub maps: Vec<u16>,
 }
 
@@ -233,6 +291,7 @@ impl Default for ThruConnectionParams {
 }
 
 impl ThruConnectionParams {
+    /// Wraps the CoreMIDI from bytes operation for `ThruConnectionParams`.
     pub fn from_bytes(bytes: &[u8]) -> MidiResult<Self> {
         if bytes.len() < core::mem::size_of::<ffi::MIDIThruConnectionParams>() {
             return Err(MidiError::Bridge(
@@ -337,6 +396,7 @@ impl ThruConnectionParams {
         }
     }
 
+    /// Wraps `MIDIThruConnectionParamsInitialize`.
     pub fn to_bytes(&self) -> MidiResult<Vec<u8>> {
         if self.sources.len() > ffi::kMIDIThruConnection_MaxEndpoints {
             return Err(MidiError::Bridge("too many thru connection sources".into()));
@@ -422,11 +482,13 @@ impl ThruConnectionParams {
 }
 
 #[derive(Debug)]
+/// Wraps `MIDIThruConnectionRef`.
 pub struct ThruConnection {
     raw: ffi::MIDIThruConnectionRef,
 }
 
 impl ThruConnection {
+    /// Wraps the CoreMIDI create operation for `ThruConnection`.
     pub fn create(owner_id: Option<&str>, params: &ThruConnectionParams) -> MidiResult<Self> {
         let owner_id = owner_id.map(private::to_cstring).transpose()?;
         let bytes = params.to_bytes()?;
@@ -449,6 +511,7 @@ impl ThruConnection {
         Ok(Self { raw })
     }
 
+    /// Wraps the CoreMIDI params operation for `ThruConnection`.
     pub fn params(&self) -> MidiResult<ThruConnectionParams> {
         let mut out_bytes = ptr::null_mut();
         let mut out_len = 0;
@@ -463,6 +526,7 @@ impl ThruConnection {
         }
     }
 
+    /// Wraps the CoreMIDI set params operation for `ThruConnection`.
     pub fn set_params(&self, params: &ThruConnectionParams) -> MidiResult<()> {
         let bytes = params.to_bytes()?;
         let mut error = ptr::null_mut();
@@ -474,6 +538,7 @@ impl ThruConnection {
         }
     }
 
+    /// Wraps the CoreMIDI find operation for `ThruConnection`.
     pub fn find(owner_id: &str) -> MidiResult<Vec<ffi::MIDIThruConnectionRef>> {
         let owner_id = private::to_cstring(owner_id)?;
         let mut out_bytes = ptr::null_mut();
@@ -511,6 +576,7 @@ impl ThruConnection {
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIThruConnectionRef`.
     pub const fn raw(&self) -> ffi::MIDIThruConnectionRef {
         self.raw
     }

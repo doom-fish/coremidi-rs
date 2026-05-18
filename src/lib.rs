@@ -26,22 +26,36 @@
 )]
 
 #[cfg(feature = "async")]
+/// Async CoreMIDI stream wrappers.
 pub mod async_api;
+/// CoreMIDI MIDI-CI capability wrappers.
 pub mod capability;
 pub(crate) mod cf;
+/// CoreMIDI client wrappers.
 pub mod client;
+/// CoreMIDI driver wrappers.
 pub mod driver;
+/// CoreMIDI device, entity, and endpoint wrappers.
 pub mod endpoint;
+/// CoreMIDI error and status types.
 pub mod error;
 pub mod ffi;
+/// CoreMIDI network-session wrappers.
 pub mod network;
+/// CoreMIDI notification wrappers.
 pub mod notification;
+/// Common CoreMIDI object re-exports.
 pub mod object;
+/// CoreMIDI packet and UMP wrappers.
 pub mod packet;
+/// CoreMIDI port wrappers.
 pub mod port;
 pub(crate) mod private;
+/// CoreMIDI property wrappers.
 pub mod property;
+/// CoreMIDI setup-management wrappers.
 pub mod setup;
+/// CoreMIDI thru-connection wrappers.
 pub mod thru_connection;
 
 #[cfg(feature = "async")]

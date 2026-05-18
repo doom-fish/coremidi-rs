@@ -42,8 +42,11 @@ extern "C" {
 }
 
 #[derive(Debug, Clone)]
+/// Wraps `MIDIEventList`.
 pub struct OwnedEventList {
+    /// Mirrors the CoreMIDI protocol field.
     pub protocol: MidiProtocol,
+    /// Mirrors the CoreMIDI packets field.
     pub packets: Vec<ffi::MIDIEventPacket>,
 }
 
@@ -87,6 +90,7 @@ impl OwnedEventList {
 }
 
 #[derive(Debug)]
+/// Wraps `MIDIEventList`.
 pub struct MidiEventStream {
     source: ffi::MIDIEndpointRef,
     port: ffi::MIDIPortRef,
@@ -95,6 +99,7 @@ pub struct MidiEventStream {
 }
 
 impl MidiEventStream {
+    /// Wraps `MIDIInputPortCreateWithProtocol`.
     pub fn subscribe(
         client: ffi::MIDIClientRef,
         source: ffi::MIDIEndpointRef,
@@ -165,6 +170,7 @@ unsafe impl Send for MidiEventStream {}
 unsafe impl Sync for MidiEventStream {}
 
 #[derive(Debug)]
+/// Mirrors the CoreMIDI MIDI virtual destination stream payload.
 pub struct MidiVirtualDestinationStream {
     endpoint: ffi::MIDIEndpointRef,
     stream: BoundedAsyncStream<OwnedEventList>,
@@ -172,6 +178,7 @@ pub struct MidiVirtualDestinationStream {
 }
 
 impl MidiVirtualDestinationStream {
+    /// Wraps `MIDIDestinationCreateWithProtocol`.
     pub fn create(
         client: ffi::MIDIClientRef,
         name: &str,
@@ -218,6 +225,7 @@ impl MidiVirtualDestinationStream {
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIEndpointRef`.
     pub const fn endpoint(&self) -> ffi::MIDIEndpointRef {
         self.endpoint
     }
@@ -239,6 +247,7 @@ unsafe impl Send for MidiVirtualDestinationStream {}
 unsafe impl Sync for MidiVirtualDestinationStream {}
 
 #[derive(Debug)]
+/// Mirrors the CoreMIDI MIDI client notification stream payload.
 pub struct MidiClientNotificationStream {
     bridged_client: *mut c_void,
     stream: BoundedAsyncStream<Notification>,
@@ -246,6 +255,7 @@ pub struct MidiClientNotificationStream {
 }
 
 impl MidiClientNotificationStream {
+    /// Wraps `MIDIClientCreateWithBlock`.
     pub fn subscribe(name: &str, capacity: usize) -> MidiResult<Self> {
         if capacity == 0 {
             return Err(MidiError::InvalidArgument(
@@ -311,6 +321,7 @@ unsafe impl Send for MidiClientNotificationStream {}
 unsafe impl Sync for MidiClientNotificationStream {}
 
 #[derive(Debug)]
+/// Mirrors the CoreMIDI MIDI CI discovery stream payload.
 pub struct MidiCIDiscoveryStream {
     handle: *mut c_void,
     stream: BoundedAsyncStream<Vec<CiDeviceInfo>>,
@@ -319,6 +330,7 @@ pub struct MidiCIDiscoveryStream {
 
 impl MidiCIDiscoveryStream {
     #[must_use]
+    /// Wraps `MIDICIDeviceManager` discovery notifications.
     pub fn subscribe(capacity: usize) -> Option<Self> {
         if capacity == 0 {
             return None;
@@ -362,6 +374,7 @@ unsafe impl Send for MidiCIDiscoveryStream {}
 unsafe impl Sync for MidiCIDiscoveryStream {}
 
 #[derive(Debug)]
+/// Mirrors the CoreMIDI MIDI thru connection stream payload.
 pub struct MidiThruConnectionStream {
     bridged_client: *mut c_void,
     stream: BoundedAsyncStream<()>,
@@ -369,6 +382,7 @@ pub struct MidiThruConnectionStream {
 }
 
 impl MidiThruConnectionStream {
+    /// Wraps `MIDIClientCreateWithBlock` notifications for `kMIDIMsgThruConnectionsChanged`.
     pub fn subscribe(name: &str, capacity: usize) -> MidiResult<Self> {
         if capacity == 0 {
             return Err(MidiError::InvalidArgument(
@@ -429,16 +443,19 @@ macro_rules! impl_stream_accessors {
     ($name:ident, $item:ty) => {
         impl $name {
             #[must_use]
+            /// Wraps the next-item accessor for the CoreMIDI async stream.
             pub const fn next(&self) -> NextItem<'_, $item> {
                 self.stream.next()
             }
 
             #[must_use]
+            /// Wraps the nonblocking next-item accessor for the CoreMIDI async stream.
             pub fn try_next(&self) -> Option<$item> {
                 self.stream.try_next()
             }
 
             #[must_use]
+            /// Wraps the buffered-item count for the CoreMIDI async stream.
             pub fn buffered_count(&self) -> usize {
                 self.stream.buffered_count()
             }

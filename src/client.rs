@@ -29,6 +29,7 @@ struct NotificationContext {
 }
 
 #[derive(Debug)]
+/// Wraps `MIDIClientRef`.
 pub struct MidiClient {
     raw: ffi::MIDIClientRef,
     bridged_client: Option<*mut c_void>,
@@ -36,10 +37,12 @@ pub struct MidiClient {
 }
 
 impl MidiClient {
+    /// Wraps the CoreMIDI new operation for `MidiClient`.
     pub fn new(name: &str) -> MidiResult<Self> {
         unsafe { Self::with_notify(name, None, ptr::null_mut()) }
     }
 
+    /// Wraps the CoreMIDI with notification handler operation for `MidiClient`.
     pub fn with_notification_handler(
         name: &str,
         handler: impl FnMut(Notification) + Send + 'static,
@@ -79,6 +82,7 @@ impl MidiClient {
         }
     }
 
+    /// Wraps the CoreMIDI restart operation for `MidiClient`.
     pub fn restart() -> MidiResult<()> {
         let mut error = ptr::null_mut();
         unsafe { private::swift_result(cmr_client_restart(&mut error), error) }
@@ -110,6 +114,7 @@ impl MidiClient {
         })
     }
 
+    /// Wraps the CoreMIDI output port operation for `MidiClient`.
     pub fn output_port(&self, name: &str) -> MidiResult<MidiOutputPort> {
         MidiOutputPort::new(self.raw, name)
     }
@@ -129,6 +134,7 @@ impl MidiClient {
         MidiInputPort::new_legacy(self.raw, name, read_proc, ref_con)
     }
 
+    /// Wraps the CoreMIDI input port with protocol operation for `MidiClient`.
     pub fn input_port_with_protocol(
         &self,
         name: &str,
@@ -137,10 +143,12 @@ impl MidiClient {
         MidiInputPort::new_with_protocol(self.raw, name, protocol)
     }
 
+    /// Wraps the CoreMIDI virtual source operation for `MidiClient`.
     pub fn virtual_source(&self, name: &str) -> MidiResult<VirtualSource> {
         VirtualSource::new(self.raw, name)
     }
 
+    /// Wraps the CoreMIDI virtual source with protocol operation for `MidiClient`.
     pub fn virtual_source_with_protocol(
         &self,
         name: &str,
@@ -165,6 +173,7 @@ impl MidiClient {
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIClientRef`.
     pub const fn raw(&self) -> ffi::MIDIClientRef {
         self.raw
     }

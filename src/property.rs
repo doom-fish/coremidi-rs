@@ -44,21 +44,33 @@ extern "C" {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Wraps `MIDIObjectType` values.
 pub enum MidiObjectType {
+    /// Wraps the CoreMIDI other case.
     Other,
+    /// Wraps the CoreMIDI device case.
     Device,
+    /// Wraps the CoreMIDI entity case.
     Entity,
+    /// Wraps the CoreMIDI source case.
     Source,
+    /// Wraps the CoreMIDI destination case.
     Destination,
+    /// Wraps the CoreMIDI external device case.
     ExternalDevice,
+    /// Wraps the CoreMIDI external entity case.
     ExternalEntity,
+    /// Wraps the CoreMIDI external source case.
     ExternalSource,
+    /// Wraps the CoreMIDI external destination case.
     ExternalDestination,
+    /// Wraps an unknown CoreMIDI value.
     Unknown(i32),
 }
 
 impl MidiObjectType {
     #[must_use]
+    /// Wraps an existing `MIDIObjectType`.
     pub const fn from_raw(raw: i32) -> Self {
         match raw {
             ffi::kMIDIObjectType_Other => Self::Other,
@@ -75,6 +87,7 @@ impl MidiObjectType {
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIObjectType`.
     pub const fn raw(self) -> i32 {
         match self {
             Self::Other => ffi::kMIDIObjectType_Other,
@@ -91,6 +104,7 @@ impl MidiObjectType {
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI is external operation for `MidiObjectType`.
     pub const fn is_external(self) -> bool {
         matches!(
             self,
@@ -103,6 +117,7 @@ impl MidiObjectType {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
+/// Wraps `CFStringRef`.
 pub struct MidiProperty {
     raw: ffi::CFStringRef,
 }
@@ -116,6 +131,7 @@ impl fmt::Debug for MidiProperty {
 macro_rules! property_const {
     ($name:ident, $symbol:ident) => {
         #[must_use]
+        /// Wraps the matching CoreMIDI operation.
         pub fn $name() -> Self {
             unsafe { Self::from_raw(ffi::$symbol) }
         }
@@ -124,11 +140,13 @@ macro_rules! property_const {
 
 impl MidiProperty {
     #[must_use]
+    /// Wraps an existing `CFStringRef`.
     pub const unsafe fn from_raw(raw: ffi::CFStringRef) -> Self {
         Self { raw }
     }
 
     #[must_use]
+    /// Returns the wrapped `CFStringRef`.
     pub const fn as_raw(self) -> ffi::CFStringRef {
         self.raw
     }
@@ -208,37 +226,47 @@ impl MidiProperty {
     property_const!(driver_uses_serial, kMIDIDriverPropertyUsesSerial);
 }
 
+/// Extends wrappers over `MIDIObjectRef` with CoreMIDI property accessors.
 pub trait MidiObject {
+    /// Returns the wrapped `MIDIObjectRef`.
     fn raw_object(&self) -> ffi::MIDIObjectRef;
 
+    /// Wraps the CoreMIDI integer property operation for `MidiObject`.
     fn integer_property(&self, property: MidiProperty) -> MidiResult<i32> {
         object_integer_property(self.raw_object(), property)
     }
 
+    /// Wraps the CoreMIDI set integer property operation for `MidiObject`.
     fn set_integer_property(&self, property: MidiProperty, value: i32) -> MidiResult<()> {
         object_set_integer_property(self.raw_object(), property, value)
     }
 
+    /// Wraps the CoreMIDI string property operation for `MidiObject`.
     fn string_property(&self, property: MidiProperty) -> MidiResult<String> {
         object_string_property(self.raw_object(), property)
     }
 
+    /// Wraps the CoreMIDI set string property operation for `MidiObject`.
     fn set_string_property(&self, property: MidiProperty, value: &str) -> MidiResult<()> {
         object_set_string_property(self.raw_object(), property, value)
     }
 
+    /// Wraps the CoreMIDI data property operation for `MidiObject`.
     fn data_property(&self, property: MidiProperty) -> MidiResult<Vec<u8>> {
         object_data_property(self.raw_object(), property)
     }
 
+    /// Wraps the CoreMIDI set data property operation for `MidiObject`.
     fn set_data_property(&self, property: MidiProperty, data: &[u8]) -> MidiResult<()> {
         object_set_data_property(self.raw_object(), property, data)
     }
 
+    /// Wraps the CoreMIDI dictionary property JSON operation for `MidiObject`.
     fn dictionary_property_json(&self, property: MidiProperty) -> MidiResult<Value> {
         object_dictionary_property_json(self.raw_object(), property)
     }
 
+    /// Wraps the CoreMIDI set dictionary property JSON operation for `MidiObject`.
     fn set_dictionary_property_json(
         &self,
         property: MidiProperty,
@@ -247,26 +275,32 @@ pub trait MidiObject {
         object_set_dictionary_property_json(self.raw_object(), property, value)
     }
 
+    /// Wraps the CoreMIDI properties JSON operation for `MidiObject`.
     fn properties_json(&self, deep: bool) -> MidiResult<Value> {
         object_properties_json(self.raw_object(), deep)
     }
 
+    /// Wraps the CoreMIDI remove property operation for `MidiObject`.
     fn remove_property(&self, property: MidiProperty) -> MidiResult<()> {
         object_remove_property(self.raw_object(), property)
     }
 
+    /// Wraps the CoreMIDI name operation for `MidiObject`.
     fn name(&self) -> MidiResult<String> {
         self.string_property(MidiProperty::name())
     }
 
+    /// Wraps the CoreMIDI manufacturer operation for `MidiObject`.
     fn manufacturer(&self) -> MidiResult<String> {
         self.string_property(MidiProperty::manufacturer())
     }
 
+    /// Wraps the CoreMIDI model operation for `MidiObject`.
     fn model(&self) -> MidiResult<String> {
         self.string_property(MidiProperty::model())
     }
 
+    /// Wraps the CoreMIDI unique ID operation for `MidiObject`.
     fn unique_id(&self) -> MidiResult<i32> {
         self.integer_property(MidiProperty::unique_id())
     }
@@ -409,16 +443,24 @@ pub(crate) fn object_remove_property(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Wraps CoreMIDI resolved MIDI object values.
 pub enum ResolvedMidiObject {
+    /// Wraps the CoreMIDI device case.
     Device(MidiDevice),
+    /// Wraps the CoreMIDI entity case.
     Entity(MidiEntity),
+    /// Wraps the CoreMIDI endpoint case.
     Endpoint(MidiEndpoint),
+    /// Wraps the CoreMIDI other case.
     Other {
+        /// Mirrors the matching CoreMIDI field.
         raw: ffi::MIDIObjectRef,
+        /// Mirrors the matching CoreMIDI field.
         object_type: MidiObjectType,
     },
 }
 
+/// Wraps `MIDIObjectFindByUniqueID`.
 pub fn object_find_by_unique_id(unique_id: i32) -> MidiResult<ResolvedMidiObject> {
     let mut object = 0;
     let mut object_type = ffi::kMIDIObjectType_Other;

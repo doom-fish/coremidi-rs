@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.5.2] - 2026-05-18
+
+### Changed
+
+- Added one-line rustdoc coverage notes for every public item outside `src/ffi/`, raising `cargo rustdoc --all-features -- -Z unstable-options --show-coverage` from 0.8% to 100.0%.
+
 ## [0.5.1] - 2026-05-18
 
 ### Changed

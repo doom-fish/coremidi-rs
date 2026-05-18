@@ -14,23 +14,32 @@ extern "C" {
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+/// Mirrors the CoreMIDI driver interface IDs payload.
 pub struct DriverInterfaceIds {
+    /// Mirrors the CoreMIDI driver type ID field.
     pub driver_type_id: String,
+    /// Mirrors the CoreMIDI driver interface ID field.
     pub driver_interface_id: String,
+    /// Mirrors the CoreMIDI driver interface2 ID field.
     pub driver_interface2_id: String,
+    /// Mirrors the CoreMIDI driver interface3 ID field.
     pub driver_interface3_id: String,
+    /// Mirrors the CoreMIDI uses serial property field.
     pub uses_serial_property: String,
 }
 
+/// Wraps the CoreMIDI driver interface IDs operation for `DriverInterfaceIds`.
 pub fn driver_interface_ids() -> MidiResult<DriverInterfaceIds> {
     unsafe { crate::private::take_json(cmr_driver_interface_ids_json()) }
 }
 
 #[must_use]
+/// Wraps `MIDIGetDriverIORunLoop`.
 pub fn driver_io_run_loop_available() -> bool {
     unsafe { !ffi::MIDIGetDriverIORunLoop().is_null() }
 }
 
+/// Wraps `MIDIDeviceRef`.
 pub struct DriverOwnedDevice {
     raw: ffi::MIDIDeviceRef,
 }
@@ -44,6 +53,7 @@ impl fmt::Debug for DriverOwnedDevice {
 }
 
 impl DriverOwnedDevice {
+    /// Wraps `MIDIDeviceCreate`.
     pub fn new(name: &str, manufacturer: &str, model: &str) -> MidiResult<Self> {
         let name = OwnedCFString::new(name)?;
         let manufacturer = OwnedCFString::new(manufacturer)?;
@@ -62,11 +72,13 @@ impl DriverOwnedDevice {
     }
 
     #[must_use]
+    /// Returns the wrapped `MIDIDeviceRef`.
     pub const fn raw(&self) -> ffi::MIDIDeviceRef {
         self.raw
     }
 
     #[must_use]
+    /// Wraps the CoreMIDI as MIDI device operation for `DriverOwnedDevice`.
     pub const fn as_midi_device(&self) -> MidiDevice {
         unsafe { MidiDevice::from_raw(self.raw) }
     }

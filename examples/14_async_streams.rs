@@ -9,7 +9,6 @@ fn main() {
     {
         eprintln!("This example requires the `async` feature. Run with:");
         eprintln!("  cargo run --example 14_async_streams --features async");
-        return;
     }
 
     #[cfg(feature = "async")]

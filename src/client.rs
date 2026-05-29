@@ -1,6 +1,7 @@
 use core::ffi::{c_char, c_void};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
+use std::sync::atomic::{fence, AtomicUsize, Ordering};
 
 use crate::cf::OwnedCFString;
 use crate::endpoint::{VirtualDestination, VirtualSource};
@@ -17,6 +18,8 @@ extern "C" {
         name: *const c_char,
         callback: Option<unsafe extern "C" fn(*mut c_void, *const c_char)>,
         user_info: *mut c_void,
+        context_retain: Option<unsafe extern "C" fn(*mut c_void)>,
+        context_release: Option<unsafe extern "C" fn(*mut c_void)>,
         out_client: *mut *mut c_void,
         error_out: *mut *mut c_char,
     ) -> i32;
@@ -26,6 +29,64 @@ extern "C" {
 
 struct NotificationContext {
     handler: Box<dyn FnMut(Notification) + Send + 'static>,
+    ref_count: AtomicUsize,
+}
+
+impl NotificationContext {
+    fn new(handler: Box<dyn FnMut(Notification) + Send + 'static>) -> *mut Self {
+        Box::into_raw(Box::new(Self {
+            handler,
+            ref_count: AtomicUsize::new(1),
+        }))
+    }
+
+    /// Increment the reference count.
+    ///
+    /// # Safety
+    ///
+    /// `ptr` must point to a valid, live `NotificationContext`.
+    unsafe fn retain(ptr: *mut Self) {
+        if ptr.is_null() {
+            return;
+        }
+        unsafe { &(*ptr).ref_count }.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// Decrement the reference count, freeing the context when it reaches zero.
+    ///
+    /// # Safety
+    ///
+    /// `ptr` must point to a valid, live `NotificationContext`. After this call
+    /// the caller must not use `ptr` if the context was freed.
+    unsafe fn release(ptr: *mut Self) {
+        if ptr.is_null() {
+            return;
+        }
+        let prev = unsafe { &(*ptr).ref_count }.fetch_sub(1, Ordering::Release);
+        if prev == 1 {
+            // Acquire fence pairs with the Release stores from every other
+            // thread's `fetch_sub` so the freeing thread observes all of their
+            // prior writes. This is the canonical Arc-style refcount drop and
+            // is required for soundness on weakly-ordered architectures.
+            fence(Ordering::Acquire);
+            drop(unsafe { Box::from_raw(ptr) });
+        }
+    }
+}
+
+// C trampoline handed to Swift so the notification block can take a +1
+// reference on the Rust `NotificationContext` for the duration of its own
+// lifetime. This keeps the context alive while any notification can still be
+// dispatched on it, even though CoreMIDI does not synchronously drain
+// in-flight notification blocks on `MIDIClientDispose`.
+unsafe extern "C" fn notification_context_retain(context: *mut c_void) {
+    unsafe { NotificationContext::retain(context.cast::<NotificationContext>()) };
+}
+
+// C trampoline handed to Swift, invoked from the notification block's owning
+// object `deinit` to drop the +1 taken in `notification_context_retain`.
+unsafe extern "C" fn notification_context_release(context: *mut c_void) {
+    unsafe { NotificationContext::release(context.cast::<NotificationContext>()) };
 }
 
 #[derive(Debug)]
@@ -48,9 +109,7 @@ impl MidiClient {
         handler: impl FnMut(Notification) + Send + 'static,
     ) -> MidiResult<Self> {
         let name = private::to_cstring(name)?;
-        let context = Box::into_raw(Box::new(NotificationContext {
-            handler: Box::new(handler),
-        }));
+        let context = NotificationContext::new(Box::new(handler));
         let mut bridged_client = ptr::null_mut();
         let mut error = ptr::null_mut();
 
@@ -60,6 +119,8 @@ impl MidiClient {
                     name.as_ptr(),
                     Some(notification_callback_trampoline),
                     context.cast(),
+                    Some(notification_context_retain),
+                    Some(notification_context_release),
                     &mut bridged_client,
                     &mut error,
                 ),
@@ -75,7 +136,7 @@ impl MidiClient {
             }),
             Err(error) => {
                 unsafe {
-                    drop(Box::from_raw(context));
+                    NotificationContext::release(context);
                 }
                 Err(error)
             }
@@ -184,19 +245,20 @@ impl Drop for MidiClient {
         if let Some(client) = self.bridged_client.take() {
             // SAFETY: `client` is an ARC-managed Swift object created in
             // `with_notification_handler`.  Releasing it disposes the
-            // underlying `MIDIClientRef` and unregisters the notification
-            // block.  The `notification_context` is freed afterwards (below)
-            // so any in-flight `MIDIRestart` notification that races this
-            // release still finds a live context and does not dereference
-            // freed memory.
+            // underlying `MIDIClientRef` and drops CoreMIDI's reference to the
+            // notification block, whose owning Swift object holds a +1 on the
+            // `NotificationContext` (taken in `init` via
+            // `notification_context_retain`, dropped in `deinit` via
+            // `notification_context_release`).
             //
-            // Caveat: CoreMIDI does not guarantee synchronous draining of
-            // in-flight blocks on disposal.  A callback queued concurrently
-            // on the MIDI server thread (e.g. during `MIDIRestart`) could
-            // theoretically call `notification_callback_trampoline` after the
-            // context box is freed below.  A serial-queue barrier would be
-            // required to eliminate this window entirely; it is not present in
-            // this bridge.
+            // CoreMIDI does not guarantee synchronous draining of in-flight
+            // notification blocks on disposal, but that is safe here: while a
+            // block invocation is in flight, ARC keeps the block (and the
+            // object it strongly captures) alive for the duration of the call,
+            // so that object's +1 on the context is held throughout. The
+            // context box is therefore freed only once both this Rust
+            // `MidiClient` and the Swift block-owning object have released
+            // their references — never while a callback can still observe it.
             unsafe { private::release_swift_object(client) };
         } else {
             // SAFETY: `self.raw` is a valid `MIDIClientRef` created in
@@ -205,12 +267,13 @@ impl Drop for MidiClient {
         }
 
         if let Some(context) = self.notification_context.take() {
-            // SAFETY: `context` was produced by `Box::into_raw` in
-            // `with_notification_handler` and is freed exactly once here,
-            // after the Swift client (and therefore the notification block)
-            // has been released above.
+            // SAFETY: `context` was produced by `NotificationContext::new` in
+            // `with_notification_handler`. This drops the +1 owned by the Rust
+            // `MidiClient`; the box is freed only when the Swift block-owning
+            // object has also released its reference, so any in-flight
+            // notification still finds a live context.
             unsafe {
-                drop(Box::from_raw(context));
+                NotificationContext::release(context);
             }
         }
     }
@@ -231,12 +294,14 @@ unsafe extern "C" fn notification_callback_trampoline(
             return;
         }
 
-        let context = &mut *user_info.cast::<NotificationContext>();
+        let context = user_info.cast::<NotificationContext>();
         let payload = std::ffi::CStr::from_ptr(payload_json)
             .to_string_lossy()
             .into_owned();
         if let Ok(notification) = Notification::from_json_str(&payload) {
-            (context.handler)(notification);
+            // Borrow only the `handler` field; the `ref_count` atomic may be
+            // touched concurrently by retain/release through shared refs.
+            ((*context).handler)(notification);
         }
     }));
 }

@@ -16,8 +16,7 @@ let package = Package(
     targets: [
         .target(
             name: "CoreMIDIBridge",
-            path: "Sources/CoreMIDIBridge",
-            publicHeadersPath: "include"
+            path: "Sources/CoreMIDIBridge"
         )
     ]
 )

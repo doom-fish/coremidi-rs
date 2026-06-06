@@ -83,7 +83,26 @@ impl OwnedEventList {
         let mut packet_ptr = ptr::addr_of!((*ptr).packet).cast::<ffi::MIDIEventPacket>();
 
         for _ in 0..num_packets {
-            packets.push(packet_ptr.read_unaligned());
+            // CoreMIDI packs event packets compactly: each occupies only
+            // `wordCount` words, not the full fixed-size `[u32; 64]` declared on
+            // `MIDIEventPacket`.  Reading the whole struct by value would read
+            // past the end of the variable-length event-list buffer for the
+            // trailing packet (an out-of-bounds read on the real-time server
+            // thread).  Copy the header plus only the valid words instead,
+            // clamping `wordCount` to the struct capacity.
+            let time_stamp = ptr::addr_of!((*packet_ptr).timeStamp).read_unaligned();
+            let word_count = ptr::addr_of!((*packet_ptr).wordCount).read_unaligned();
+            let valid = (word_count as usize).min(64);
+            let mut packet = ffi::MIDIEventPacket {
+                timeStamp: time_stamp,
+                wordCount: word_count,
+                words: [0; 64],
+            };
+            let words_src = ptr::addr_of!((*packet_ptr).words).cast::<u32>();
+            for (i, slot) in packet.words[..valid].iter_mut().enumerate() {
+                *slot = words_src.add(i).read_unaligned();
+            }
+            packets.push(packet);
             packet_ptr = ffi::MIDIEventPacketNext(packet_ptr);
         }
 

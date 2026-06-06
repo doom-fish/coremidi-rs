@@ -13,10 +13,10 @@ dependencies = [
 
 [[package]]
 name = "coremidi-rs"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "apple-cf",
- "doom-fish-utils 0.3.2",
+ "doom-fish-utils 0.3.3",
  "libc",
  "pollster",
  "regex-lite",
@@ -47,7 +47,7 @@ checksum = "c64a66e1fdd09573daeb89569701e8c3eab595cf3e2be0752ec6303e36689242"
 
 [[package]]
 name = "doom-fish-utils"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "crossbeam-queue",
  "futures-util",

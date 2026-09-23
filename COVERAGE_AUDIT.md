@@ -1,13 +1,15 @@
 # coremidi-rs coverage audit (vs MacOSX26.2.sdk)
 
 SDK_PUBLIC_SYMBOLS: 235
-VERIFIED: 206
-GAPS: 0
-EXEMPT: 29
-COVERAGE_PCT: 100.00%
+VERIFIED: 220
+GAPS: 1
+EXEMPT: 14
+COVERAGE_PCT: 99.57%
 
-- Counts cover top-level public CoreMIDI declarations (types, exported constants, Obj-C interfaces/protocols, and non-inline functions), not per-method Obj-C coverage.
-- `ffi::<symbol>` rows indicate exact raw C bindings in `coremidi::ffi`; raw extern functions/statics are feature-gated behind `raw-ffi`.
+- Generated against MacOSX26.2.sdk and not regenerated against the installed 26.5 SDK.
+- Counts cover top-level public CoreMIDI declarations (types, exported constants, Obj-C interfaces/protocols, and non-inline functions), not per-method Obj-C coverage. Obj-C interfaces count as VERIFIED when the crate has a snapshot or handle type for them, even if it wraps only part of their methods.
+- VERIFIED means the symbol is declared in `coremidi::ffi` or used by a Rust wrapper. 154 of the 220 VERIFIED rows name only a raw `ffi::<symbol>` declaration (public only with the `raw-ffi` feature); many of those back safe wrappers, but the row does not claim one.
+- COVERAGE_PCT is (VERIFIED + EXEMPT) / SDK_PUBLIC_SYMBOLS. EXEMPT rows are symbols the crate does not wrap safely.
 
 ## 🟢 VERIFIED
 | Symbol | Kind | Header | Wrapped by |
@@ -37,7 +39,6 @@ COVERAGE_PCT: 100.00%
 | `MIDIGetDriverDeviceList` | function | `MIDIDriver.h` | `ffi::MIDIGetDriverDeviceList` |
 | `MIDIGetDriverIORunLoop` | function | `MIDIDriver.h` | `ffi::MIDIGetDriverIORunLoop` |
 | `kMIDIDriverPropertyUsesSerial` | const | `MIDIDriver.h` | `ffi::kMIDIDriverPropertyUsesSerial` |
-| `MIDIEventListForEachEvent` | function | `MIDIMessages.h` | `packet::EventListRef::iter / EventIter` |
 | `MIDICVStatus` | enum | `MIDIMessages.h` | `packet::MidiCvStatus` |
 | `MIDIMessageType` | enum | `MIDIMessages.h` | `packet::MidiMessageType` |
 | `MIDIMessage_128` | struct | `MIDIMessages.h` | `packet::MidiMessage128 / ffi::MIDIMessage_128` |
@@ -218,9 +219,26 @@ COVERAGE_PCT: 100.00%
 | `MIDIUMPFunctionBlockWasUpdatedNotification` | const | `MIDIUMPEndpointManager.h` | `endpoint::UmpEndpointManager::constants / endpoint::UmpEndpointManagerConstants::function_block_updated_notification` |
 | `MIDIUMPMutableEndpoint` | interface | `MIDIUMPMutableEndpoint.h` | `endpoint::MutableUmpEndpoint` |
 | `MIDIUMPMutableFunctionBlock` | interface | `MIDIUMPMutableFunctionBlock.h` | `endpoint::MutableUmpFunctionBlock` |
+| `MIDIDestinationCreate` | function | `MIDIServices.h` | `client::MidiClient::virtual_destination` (unsafe, raw `MIDIReadProc`) |
+| `MIDIInputPortCreate` | function | `MIDIServices.h` | `client::MidiClient::input_port` (unsafe, raw `MIDIReadProc`) |
+| `MIDIPacketListAdd` | function | `MIDIServices.h` | `packet::PacketListBuffer::add_packet` |
+| `MIDIPacketListInit` | function | `MIDIServices.h` | `packet::PacketListBuffer::with_capacity / clear` |
+| `MIDIReceived` | function | `MIDIServices.h` | `endpoint::VirtualSource::received` |
+| `MIDISend` | function | `MIDIServices.h` | `port::MidiOutputPort::send` |
+| `MIDISourceCreate` | function | `MIDIServices.h` | `client::MidiClient::virtual_source` |
+| `kMIDIPropertyFactoryPatchNameFile` | const | `MIDIServices.h` | `property::MidiProperty::factory_patch_name_file` |
+| `kMIDIPropertyNameConfiguration` | const | `MIDIServices.h` | `property::MidiProperty::name_configuration` |
+| `kMIDIPropertyUserPatchNameFile` | const | `MIDIServices.h` | `property::MidiProperty::user_patch_name_file` |
+| `MIDIDeviceAddEntity` | function | `MIDISetup.h` | `setup::device_add_entity_deprecated` (`#[deprecated]`) |
+| `MIDIGetSerialPortDrivers` | function | `MIDISetup.h` | `setup::serial_port_drivers` (`#[deprecated]`; returns -4 on current macOS) |
+| `MIDIGetSerialPortOwner` | function | `MIDISetup.h` | `setup::serial_port_owner` (`#[deprecated]`; returns -4 on current macOS) |
+| `MIDISetupGetCurrent` | function | `MIDISetup.h` | `setup::current_setup_xml` (`#[deprecated]`; returns -4 on current macOS) |
+| `MIDISetupToData` | function | `MIDISetup.h` | `setup::current_setup_xml` (`#[deprecated]`; returns -4 on current macOS) |
 
 ## 🔴 GAPS
-None.
+| Symbol | Kind | Header | Status |
+| --- | --- | --- | --- |
+| `MIDIEventListForEachEvent` | function | `MIDIMessages.h` | not wrapped: `packet::EventIter` walks packets and exposes raw UMP words, but nothing decodes them into `MIDIUniversalMessage` |
 
 ## ⏭️ EXEMPT
 | Symbol | Kind | Header | Reason | SDK attribute |
@@ -232,25 +250,10 @@ None.
 | `MIDICIProfileResponderDelegate` | protocol | `MIDICapabilityInquiry.h` | legacy MIDI-CI responder protocol intentionally skipped | `MIDICI1_1_DEPRECATED` |
 | `MIDICIResponder` | interface | `MIDICapabilityInquiry.h` | legacy MIDI-CI responder class intentionally skipped | `MIDICI1_1_DEPRECATED` |
 | `MIDICISession` | interface | `MIDICapabilityInquiry.h` | legacy MIDI-CI session class intentionally skipped | `MIDICI1_0_DEPRECATED` |
-| `MIDIDestinationCreate` | function | `MIDIServices.h` | legacy packet-list virtual destination constructor intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("MIDIDestinationCreateWithProtocol", macos(10.0, API_TO_BE_DEPRECATED))` |
-| `MIDIDestinationCreateWithBlock` | function | `MIDIServices.h` | legacy packet-list virtual destination constructor intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("MIDIDestinationCreateWithProtocol", macos(10.11, API_TO_BE_DEPRECATED))` |
-| `MIDIInputPortCreate` | function | `MIDIServices.h` | legacy packet-list input-port constructor intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("MIDIInputPortCreateWithProtocol", macos(10.0, API_TO_BE_DEPRECATED))` |
-| `MIDIInputPortCreateWithBlock` | function | `MIDIServices.h` | legacy packet-list input-port constructor intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("MIDIInputPortCreateWithProtocol", macos(10.11, API_TO_BE_DEPRECATED))` |
-| `MIDIPacketListAdd` | function | `MIDIServices.h` | legacy packet-list builder intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("MIDIEventListAdd", macos(10.0, API_TO_BE_DEPRECATED))` |
-| `MIDIPacketListInit` | function | `MIDIServices.h` | legacy packet-list builder intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("MIDIEventListInit", macos(10.0, API_TO_BE_DEPRECATED))` |
-| `MIDIReceived` | function | `MIDIServices.h` | legacy packet-list receive API intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("MIDIReceivedEventList", macos(10.0, API_TO_BE_DEPRECATED))` |
-| `MIDISend` | function | `MIDIServices.h` | legacy packet-list send API intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("MIDISendEventList", macos(10.0, API_TO_BE_DEPRECATED))` |
-| `MIDISourceCreate` | function | `MIDIServices.h` | legacy packet-list virtual source constructor intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("MIDISourceCreateWithProtocol", macos(10.0, API_TO_BE_DEPRECATED))` |
-| `kMIDIPropertyFactoryPatchNameFile` | const | `MIDIServices.h` | 10.x-deprecated property constant intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("kMIDIPropertyNameConfiguration", macos(10.1, 10.2))` |
-| `kMIDIPropertyNameConfiguration` | const | `MIDIServices.h` | 10.x-deprecated property constant intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("kMIDIPropertyNameConfigurationDictionary", macos(10.2, 10.15))` |
-| `kMIDIPropertyUserPatchNameFile` | const | `MIDIServices.h` | 10.x-deprecated property constant intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("kMIDIPropertyNameConfiguration", macos(10.1, 10.2))` |
-| `MIDIDeviceAddEntity` | function | `MIDISetup.h` | deprecated pre-protocol entity constructor intentionally skipped | `API_DEPRECATED_WITH_REPLACEMENT("MIDIDeviceNewEntity", macos(10.0, API_TO_BE_DEPRECATED))` |
-| `MIDIGetSerialPortDrivers` | function | `MIDISetup.h` | obsolete serial-port ownership API intentionally skipped | `API_DEPRECATED("No longer supported", macos(10.1, 10.6))` |
-| `MIDIGetSerialPortOwner` | function | `MIDISetup.h` | obsolete serial-port ownership API intentionally skipped | `API_DEPRECATED("No longer supported", macos(10.1, 10.6))` |
-| `MIDISetSerialPortOwner` | function | `MIDISetup.h` | obsolete serial-port ownership API intentionally skipped | `API_DEPRECATED("No longer supported", macos(10.1, 10.6))` |
-| `MIDISetupCreate` | function | `MIDISetup.h` | obsolete setup-blob API intentionally skipped | `API_DEPRECATED("No longer supported", macos(10.0, 10.6))` |
-| `MIDISetupDispose` | function | `MIDISetup.h` | obsolete setup-blob API intentionally skipped | `API_DEPRECATED("No longer supported", macos(10.0, 10.6))` |
-| `MIDISetupFromData` | function | `MIDISetup.h` | obsolete setup-blob API intentionally skipped | `API_DEPRECATED("No longer supported", macos(10.0, 10.6))` |
-| `MIDISetupGetCurrent` | function | `MIDISetup.h` | obsolete setup-blob API intentionally skipped | `API_DEPRECATED("No longer supported", macos(10.0, 10.6))` |
-| `MIDISetupInstall` | function | `MIDISetup.h` | obsolete setup-blob API intentionally skipped | `API_DEPRECATED("No longer supported", macos(10.0, 10.6))` |
-| `MIDISetupToData` | function | `MIDISetup.h` | obsolete setup-blob API intentionally skipped | `API_DEPRECATED("No longer supported", macos(10.0, 10.6))` |
+| `MIDIDestinationCreateWithBlock` | function | `MIDIServices.h` | legacy packet-list virtual destination constructor intentionally skipped (raw declaration in `coremidi::ffi` only) | `API_DEPRECATED_WITH_REPLACEMENT("MIDIDestinationCreateWithProtocol", macos(10.11, API_TO_BE_DEPRECATED))` |
+| `MIDIInputPortCreateWithBlock` | function | `MIDIServices.h` | legacy packet-list input-port constructor intentionally skipped (raw declaration in `coremidi::ffi` only) | `API_DEPRECATED_WITH_REPLACEMENT("MIDIInputPortCreateWithProtocol", macos(10.11, API_TO_BE_DEPRECATED))` |
+| `MIDISetSerialPortOwner` | function | `MIDISetup.h` | obsolete serial-port ownership API intentionally skipped (raw declaration in `coremidi::ffi` only) | `API_DEPRECATED("No longer supported", macos(10.1, 10.6))` |
+| `MIDISetupCreate` | function | `MIDISetup.h` | obsolete setup-blob API intentionally skipped (raw declaration in `coremidi::ffi` only) | `API_DEPRECATED("No longer supported", macos(10.0, 10.6))` |
+| `MIDISetupDispose` | function | `MIDISetup.h` | obsolete setup-blob API intentionally skipped (raw declaration in `coremidi::ffi` only) | `API_DEPRECATED("No longer supported", macos(10.0, 10.6))` |
+| `MIDISetupFromData` | function | `MIDISetup.h` | obsolete setup-blob API intentionally skipped (raw declaration in `coremidi::ffi` only) | `API_DEPRECATED("No longer supported", macos(10.0, 10.6))` |
+| `MIDISetupInstall` | function | `MIDISetup.h` | obsolete setup-blob API intentionally skipped (raw declaration in `coremidi::ffi` only) | `API_DEPRECATED("No longer supported", macos(10.0, 10.6))` |

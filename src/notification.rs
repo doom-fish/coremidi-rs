@@ -1,3 +1,5 @@
+use core::ffi::{c_char, CStr};
+
 use serde::Deserialize;
 
 use crate::error::{MidiError, MidiResult};
@@ -122,6 +124,13 @@ impl Notification {
         let payload: NotificationPayload = serde_json::from_str(payload)
             .map_err(|error| MidiError::Serialization(error.to_string()))?;
         Self::from_payload(payload)
+    }
+
+    pub(crate) unsafe fn from_bridge_payload(payload_json: *const c_char) -> Option<Self> {
+        if payload_json.is_null() {
+            return None;
+        }
+        Self::from_json_str(&unsafe { CStr::from_ptr(payload_json) }.to_string_lossy()).ok()
     }
 
     #[allow(clippy::cast_ptr_alignment)]

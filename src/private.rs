@@ -1,12 +1,70 @@
 use core::ffi::{c_char, c_void};
 use std::ffi::{CStr, CString};
+use std::ptr;
 
+use doom_fish_utils::callback_context::CallbackContext;
 use serde::{de::DeserializeOwned, Serialize};
 
+use crate::endpoint::MidiEventListReceiveProc;
 use crate::error::{MidiError, MidiResult};
+use crate::ffi;
+use crate::packet::MidiProtocol;
+
+pub(crate) type ReceiveObjectCreate = unsafe extern "C" fn(
+    ffi::MIDIClientRef,
+    *const c_char,
+    ffi::MIDIProtocolID,
+    Option<MidiEventListReceiveProc>,
+    *mut c_void,
+    Option<unsafe extern "C" fn(*mut c_void)>,
+    Option<unsafe extern "C" fn(*mut c_void)>,
+    *mut ffi::MIDIObjectRef,
+    *mut *mut c_char,
+) -> i32;
 
 extern "C" {
     fn cmr_object_release(ptr: *mut c_void);
+    pub(crate) fn cmr_input_port_create_with_protocol(
+        client: ffi::MIDIClientRef,
+        name: *const c_char,
+        protocol: ffi::MIDIProtocolID,
+        callback: Option<MidiEventListReceiveProc>,
+        user_info: *mut c_void,
+        context_retain: Option<unsafe extern "C" fn(*mut c_void)>,
+        context_release: Option<unsafe extern "C" fn(*mut c_void)>,
+        out_port: *mut ffi::MIDIPortRef,
+        error_out: *mut *mut c_char,
+    ) -> i32;
+}
+
+pub(crate) fn create_receive_object<T: Send + Sync + 'static>(
+    create: ReceiveObjectCreate,
+    client: ffi::MIDIClientRef,
+    name: &str,
+    protocol: MidiProtocol,
+    callback: MidiEventListReceiveProc,
+    context: &CallbackContext<T>,
+) -> MidiResult<ffi::MIDIObjectRef> {
+    let name = to_cstring(name)?;
+    let mut raw = 0;
+    let mut error = ptr::null_mut();
+    unsafe {
+        swift_result(
+            create(
+                client,
+                name.as_ptr(),
+                protocol.as_raw(),
+                Some(callback),
+                context.as_ptr(),
+                Some(CallbackContext::<T>::RETAIN),
+                Some(CallbackContext::<T>::RELEASE),
+                &raw mut raw,
+                &raw mut error,
+            ),
+            error,
+        )?;
+    }
+    Ok(raw)
 }
 
 pub(crate) fn to_cstring(value: &str) -> MidiResult<CString> {

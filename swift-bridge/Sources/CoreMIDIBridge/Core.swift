@@ -27,6 +27,36 @@ public func cmr_object_release(_ ptr: UnsafeMutableRawPointer?) {
     Unmanaged<AnyObject>.fromOpaque(ptr).release()
 }
 
+final class CMRRetainedContext {
+    let pointer: UnsafeMutableRawPointer?
+    private let release: CMRContextReleaseCallback?
+
+    init(
+        _ pointer: UnsafeMutableRawPointer?,
+        retain: CMRContextRetainCallback?,
+        release: CMRContextReleaseCallback?
+    ) {
+        self.pointer = pointer
+        self.release = release
+        if let pointer {
+            retain?(pointer)
+        }
+    }
+
+    deinit {
+        if let pointer {
+            release?(pointer)
+        }
+    }
+}
+
+func cmrProtocol(_ protocolID: MIDIProtocolID) throws -> MIDIProtocolID {
+    guard protocolID == ._1_0 || protocolID == ._2_0 else {
+        throw cmrError("invalid MIDI protocol ID")
+    }
+    return protocolID
+}
+
 @inline(__always)
 func cmrString(_ value: String) -> UnsafeMutablePointer<CChar>? {
     value.withCString { strdup($0) }

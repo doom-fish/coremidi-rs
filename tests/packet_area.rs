@@ -77,3 +77,128 @@ fn packet_and_event_buffers_roundtrip() -> MidiResult<()> {
     assert_eq!(message128.message_type(), Some(MidiMessageType::Stream));
     Ok(())
 }
+
+fn packet_contents(buffer: &PacketListBuffer) -> Vec<(u64, Vec<u8>)> {
+    buffer
+        .as_packet_list()
+        .iter()
+        .map(|packet| (packet.timestamp(), packet.bytes().to_vec()))
+        .collect()
+}
+
+fn event_contents(buffer: &EventListBuffer) -> Vec<(u64, Vec<u32>)> {
+    buffer
+        .as_event_list()
+        .iter()
+        .map(|packet| (packet.timestamp(), packet.words().to_vec()))
+        .collect()
+}
+
+#[test]
+fn cloned_packet_list_buffer_keeps_writing_after_the_original_is_dropped() -> MidiResult<()> {
+    let mut original = PacketListBuffer::with_capacity(256);
+    original.add_packet(1, &[0x90, 60, 100])?;
+    let mut clone = original.clone();
+    drop(original);
+
+    clone.add_packet(2, &[0x80, 60, 0])?;
+    clone.add_packet(3, &[0xB0, 7, 64])?;
+
+    assert_eq!(
+        packet_contents(&clone),
+        vec![
+            (1, vec![0x90, 60, 100]),
+            (2, vec![0x80, 60, 0]),
+            (3, vec![0xB0, 7, 64]),
+        ]
+    );
+    Ok(())
+}
+
+#[test]
+fn packet_list_buffer_clones_write_independently() -> MidiResult<()> {
+    let mut original = PacketListBuffer::with_capacity(256);
+    original.add_packet(1, &[0x90, 60, 100])?;
+    let mut clone = original.clone();
+
+    clone.add_packet(2, &[0x80, 60, 0])?;
+    original.add_packet(3, &[0xB0, 7, 64])?;
+
+    assert_eq!(
+        packet_contents(&original),
+        vec![(1, vec![0x90, 60, 100]), (3, vec![0xB0, 7, 64])]
+    );
+    assert_eq!(
+        packet_contents(&clone),
+        vec![(1, vec![0x90, 60, 100]), (2, vec![0x80, 60, 0])]
+    );
+
+    clone.clear();
+    clone.add_packet(4, &[0xC0, 5])?;
+    assert_eq!(packet_contents(&clone), vec![(4, vec![0xC0, 5])]);
+    assert_eq!(original.as_packet_list().packet_count(), 2);
+    Ok(())
+}
+
+#[test]
+fn cloned_event_list_buffer_keeps_writing_after_the_original_is_dropped() -> MidiResult<()> {
+    let mut original = EventListBuffer::with_capacity(MidiProtocol::Midi2, 256);
+    original.add_packet_words(1, &[0x4090_3C00, 0xFFFF_0000])?;
+    let mut clone = original.clone();
+    drop(original);
+
+    clone.add_packet_words(2, &[0x4080_3C00, 0x0000_0000])?;
+    clone.add_packet_words(3, &[0x40B0_0700, 0x8000_0000])?;
+
+    assert_eq!(
+        event_contents(&clone),
+        vec![
+            (1, vec![0x4090_3C00, 0xFFFF_0000]),
+            (2, vec![0x4080_3C00, 0x0000_0000]),
+            (3, vec![0x40B0_0700, 0x8000_0000]),
+        ]
+    );
+    assert_eq!(clone.as_event_list().protocol(), Some(MidiProtocol::Midi2));
+    Ok(())
+}
+
+#[test]
+fn event_list_buffer_clones_write_independently() -> MidiResult<()> {
+    let mut original = EventListBuffer::with_capacity(MidiProtocol::Midi2, 256);
+    original.add_packet_words(1, &[0x4090_3C00, 0xFFFF_0000])?;
+    let mut clone = original.clone();
+
+    clone.add_packet_words(2, &[0x4080_3C00, 0x0000_0000])?;
+    original.add_packet_words(3, &[0x40B0_0700, 0x8000_0000])?;
+
+    assert_eq!(
+        event_contents(&original),
+        vec![
+            (1, vec![0x4090_3C00, 0xFFFF_0000]),
+            (3, vec![0x40B0_0700, 0x8000_0000]),
+        ]
+    );
+    assert_eq!(
+        event_contents(&clone),
+        vec![
+            (1, vec![0x4090_3C00, 0xFFFF_0000]),
+            (2, vec![0x4080_3C00, 0x0000_0000]),
+        ]
+    );
+    Ok(())
+}
+
+#[test]
+fn packet_list_buffer_reports_a_full_buffer() {
+    let mut buffer = PacketListBuffer::with_capacity(0);
+    let capacity = buffer.capacity_bytes();
+    let payload = vec![0xF0_u8; capacity];
+    assert_eq!(
+        buffer.add_packet(1, &payload),
+        Err(MidiError::BufferTooSmall {
+            requested: capacity,
+            available: capacity,
+        })
+    );
+    assert_eq!(buffer.as_packet_list().packet_count(), 0);
+}

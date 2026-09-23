@@ -487,7 +487,7 @@ impl From<MidiMessage128> for [u32; 4] {
 /// Wraps `MIDIPacketList`.
 pub struct PacketListBuffer {
     storage: Vec<u64>,
-    current_packet: *mut ffi::MIDIPacket,
+    current_offset: usize,
 }
 
 impl PacketListBuffer {
@@ -496,17 +496,18 @@ impl PacketListBuffer {
     pub fn with_capacity(capacity_bytes: usize) -> Self {
         let capacity_bytes = capacity_bytes.max(size_of::<ffi::MIDIPacketList>());
         let words = capacity_bytes.div_ceil(size_of::<u64>()).max(1);
-        let mut storage = vec![0_u64; words];
-        let current_packet = unsafe { ffi::MIDIPacketListInit(storage.as_mut_ptr().cast()) };
-        Self {
-            storage,
-            current_packet,
-        }
+        let mut buffer = Self {
+            storage: vec![0_u64; words],
+            current_offset: 0,
+        };
+        buffer.clear();
+        buffer
     }
 
     /// Wraps `MIDIPacketListInit`.
     pub fn clear(&mut self) {
-        self.current_packet = unsafe { ffi::MIDIPacketListInit(self.storage.as_mut_ptr().cast()) };
+        let packet = unsafe { ffi::MIDIPacketListInit(self.storage.as_mut_ptr().cast()) };
+        self.current_offset = storage_offset(&self.storage, packet);
     }
 
     #[must_use]
@@ -523,11 +524,13 @@ impl PacketListBuffer {
             ));
         }
 
+        let capacity_bytes = self.capacity_bytes();
+        let list = self.storage.as_mut_ptr().cast::<ffi::MIDIPacketList>();
         let packet = unsafe {
             ffi::MIDIPacketListAdd(
-                self.storage.as_mut_ptr().cast(),
-                self.capacity_bytes(),
-                self.current_packet,
+                list,
+                capacity_bytes,
+                list.cast::<u8>().add(self.current_offset).cast(),
                 timestamp,
                 data.len(),
                 data.as_ptr(),
@@ -536,10 +539,10 @@ impl PacketListBuffer {
         if packet.is_null() {
             Err(MidiError::BufferTooSmall {
                 requested: data.len(),
-                available: self.capacity_bytes(),
+                available: capacity_bytes,
             })
         } else {
-            self.current_packet = packet;
+            self.current_offset = storage_offset(&self.storage, packet);
             Ok(())
         }
     }
@@ -668,7 +671,7 @@ impl<'a> Iterator for PacketIter<'a> {
 /// Wraps `MIDIEventList`.
 pub struct EventListBuffer {
     storage: Vec<u64>,
-    current_packet: *mut ffi::MIDIEventPacket,
+    current_offset: usize,
     protocol: MidiProtocol,
 }
 
@@ -678,21 +681,21 @@ impl EventListBuffer {
     pub fn with_capacity(protocol: MidiProtocol, capacity_bytes: usize) -> Self {
         let capacity_bytes = capacity_bytes.max(size_of::<ffi::MIDIEventList>());
         let words = capacity_bytes.div_ceil(size_of::<u64>()).max(1);
-        let mut storage = vec![0_u64; words];
-        let current_packet =
-            unsafe { ffi::MIDIEventListInit(storage.as_mut_ptr().cast(), protocol.as_raw()) };
-        Self {
-            storage,
-            current_packet,
+        let mut buffer = Self {
+            storage: vec![0_u64; words],
+            current_offset: 0,
             protocol,
-        }
+        };
+        buffer.clear();
+        buffer
     }
 
     /// Wraps `MIDIEventListInit`.
     pub fn clear(&mut self) {
-        self.current_packet = unsafe {
+        let packet = unsafe {
             ffi::MIDIEventListInit(self.storage.as_mut_ptr().cast(), self.protocol.as_raw())
         };
+        self.current_offset = storage_offset(&self.storage, packet);
     }
 
     #[must_use]
@@ -713,11 +716,13 @@ impl EventListBuffer {
         timestamp: ffi::MIDITimeStamp,
         words: &[u32],
     ) -> MidiResult<()> {
+        let capacity_bytes = self.capacity_bytes();
+        let list = self.storage.as_mut_ptr().cast::<ffi::MIDIEventList>();
         let packet = unsafe {
             ffi::MIDIEventListAdd(
-                self.storage.as_mut_ptr().cast(),
-                self.capacity_bytes(),
-                self.current_packet,
+                list,
+                capacity_bytes,
+                list.cast::<u8>().add(self.current_offset).cast(),
                 timestamp,
                 words.len(),
                 words.as_ptr(),
@@ -726,10 +731,10 @@ impl EventListBuffer {
         if packet.is_null() {
             Err(MidiError::BufferTooSmall {
                 requested: core::mem::size_of_val(words),
-                available: self.capacity_bytes(),
+                available: capacity_bytes,
             })
         } else {
-            self.current_packet = packet;
+            self.current_offset = storage_offset(&self.storage, packet);
             Ok(())
         }
     }
@@ -862,6 +867,10 @@ impl<'a> Iterator for EventIter<'a> {
         self.remaining -= 1;
         Some(current)
     }
+}
+
+fn storage_offset<T>(storage: &[u64], packet: *const T) -> usize {
+    packet as usize - storage.as_ptr() as usize
 }
 
 unsafe fn midi_packet_next(packet: *const ffi::MIDIPacket) -> *const ffi::MIDIPacket {

@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "CoreMIDIBridge",
     platforms: [
-        .macOS(.v10_15)
+        .macOS(.v11)
     ],
     products: [
         .library(

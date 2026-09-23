@@ -153,10 +153,8 @@ public func cmr_legacy_ci_profile_json(
         let profile: MIDICIProfile
         if let name {
             profile = MIDICIProfile(data: data, name: String(cString: name))
-        } else if #available(macOS 11.0, *) {
-            profile = MIDICIProfile(data: data)
         } else {
-            throw cmrError("legacy MIDICIProfile(data:) requires macOS 11 or newer when no name is supplied")
+            profile = MIDICIProfile(data: data)
         }
         return cmrString(cmrJSONString(cmrLegacyProfilePayload(profile)))
     } catch {

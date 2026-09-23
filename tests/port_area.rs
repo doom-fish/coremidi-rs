@@ -76,6 +76,7 @@ fn disconnect_source_waits_for_a_running_callback() -> MidiResult<()> {
     let client = MidiClient::new("port area disconnect drain")?;
     let source =
         client.virtual_source_with_protocol("port area disconnect source", MidiProtocol::Midi2)?;
+    source.set_integer_property(MidiProperty::private(), 1)?;
     let port =
         client.input_port_with_protocol("port area disconnect input", MidiProtocol::Midi2)?;
     let probe = Box::new(Probe::default());
@@ -106,6 +107,7 @@ fn dropping_a_protocol_port_waits_for_a_running_callback() -> MidiResult<()> {
     let client = MidiClient::new("port area drop drain")?;
     let source =
         client.virtual_source_with_protocol("port area drop source", MidiProtocol::Midi2)?;
+    source.set_integer_property(MidiProperty::private(), 1)?;
     let port = client.input_port_with_protocol("port area drop input", MidiProtocol::Midi2)?;
     let probe = Box::new(Probe::default());
     unsafe {
@@ -126,6 +128,7 @@ fn reconnecting_a_source_replaces_its_callback() -> MidiResult<()> {
     let client = MidiClient::new("port area reconnect")?;
     let source =
         client.virtual_source_with_protocol("port area reconnect source", MidiProtocol::Midi2)?;
+    source.set_integer_property(MidiProperty::private(), 1)?;
     let port = client.input_port_with_protocol("port area reconnect input", MidiProtocol::Midi2)?;
     let probe = Box::new(Probe::default());
     unsafe {
@@ -152,6 +155,7 @@ fn input_ports_reject_connections_meant_for_another_kind() -> MidiResult<()> {
     common::connect_midi_server();
     let client = MidiClient::new("port area kinds")?;
     let source = client.virtual_source("port area kinds source")?;
+    source.set_integer_property(MidiProperty::private(), 1)?;
     let protocol_port =
         client.input_port_with_protocol("port area kinds protocol", MidiProtocol::Midi1)?;
     let (receiver_port, _receiver) =

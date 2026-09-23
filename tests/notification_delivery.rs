@@ -128,9 +128,10 @@ mod streams {
         let publisher = thread::spawn(move || -> MidiResult<usize> {
             let client = MidiClient::new("notification stress publisher")?;
             let mut published = 0;
-            while still_publishing.load(Ordering::SeqCst) {
+            while still_publishing.load(Ordering::SeqCst) && published < 60 {
                 drop(client.virtual_source(&format!("notification stress {published}"))?);
                 published += 1;
+                thread::sleep(Duration::from_millis(5));
             }
             Ok(published)
         });

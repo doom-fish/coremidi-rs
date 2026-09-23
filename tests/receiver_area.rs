@@ -37,6 +37,7 @@ fn receiver_port_records_words_timestamp_and_source() -> MidiResult<()> {
     let client = MidiClient::new("receiver area port")?;
     let source =
         client.virtual_source_with_protocol("receiver area port source", MidiProtocol::Midi2)?;
+    source.set_integer_property(MidiProperty::private(), 1)?;
     let (port, receiver) =
         client.input_port_with_receiver("receiver area port input", MidiProtocol::Midi2, 16)?;
     port.connect(source.endpoint())?;
@@ -71,6 +72,7 @@ fn receiver_keeps_the_newest_records_when_full() -> MidiResult<()> {
     let client = MidiClient::new("receiver area overflow")?;
     let source = client
         .virtual_source_with_protocol("receiver area overflow source", MidiProtocol::Midi2)?;
+    source.set_integer_property(MidiProperty::private(), 1)?;
     let (port, receiver) =
         client.input_port_with_receiver("receiver area overflow input", MidiProtocol::Midi2, 4)?;
     port.connect(source.endpoint())?;
@@ -92,6 +94,7 @@ fn receiver_next_resolves_with_a_record() -> MidiResult<()> {
     let client = MidiClient::new("receiver area async")?;
     let source =
         client.virtual_source_with_protocol("receiver area async source", MidiProtocol::Midi2)?;
+    source.set_integer_property(MidiProperty::private(), 1)?;
     let (port, receiver) =
         client.input_port_with_receiver("receiver area async input", MidiProtocol::Midi2, 8)?;
     port.connect(source.endpoint())?;
@@ -129,6 +132,7 @@ fn receiver_destination_collects_sent_events_and_closes_on_drop() -> MidiResult<
         MidiProtocol::Midi1,
         8,
     )?;
+    destination.set_integer_property(MidiProperty::private(), 1)?;
     let output = client.output_port("receiver area destination output")?;
     let mut events = EventListBuffer::with_capacity(MidiProtocol::Midi1, 256);
     events.add_packet_words(5, &[0x2090_3C7F])?;

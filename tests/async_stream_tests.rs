@@ -76,6 +76,7 @@ fn test_midi_event_stream_copies_event_lists_from_a_source() -> MidiResult<()> {
     let client = MidiClient::new("async event stream")?;
     let source =
         client.virtual_source_with_protocol("async event stream source", MidiProtocol::Midi2)?;
+    source.set_integer_property(MidiProperty::private(), 1)?;
     let stream = MidiEventStream::subscribe(client.raw(), source.raw(), MidiProtocol::Midi2, 8)?;
     let mut events = EventListBuffer::with_capacity(MidiProtocol::Midi2, 256);
     events.add_packet_words(3, &[0x4090_3C00, 0xFFFF_0000])?;
@@ -105,14 +106,13 @@ fn test_midi_virtual_destination_stream_copies_sent_event_lists() -> MidiResult<
         MidiProtocol::Midi1,
         8,
     )?;
+    let destination = unsafe { MidiEndpoint::from_raw(stream.endpoint()) };
+    destination.set_integer_property(MidiProperty::private(), 1)?;
     let output = client.output_port("async destination stream output")?;
     let mut events = EventListBuffer::with_capacity(MidiProtocol::Midi1, 256);
     events.add_packet_words(4, &[0x2090_3C7F])?;
 
-    output.send_event_list(
-        unsafe { MidiEndpoint::from_raw(stream.endpoint()) },
-        &events,
-    )?;
+    output.send_event_list(destination, &events)?;
 
     let list = wait_for(|| stream.try_next()).expect("event list");
     assert_eq!(list.protocol, MidiProtocol::Midi1);

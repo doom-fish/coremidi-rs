@@ -239,8 +239,8 @@ impl CiProfileState {
                     midi_channel.is_some(),
                     enabled_json.as_ptr(),
                     disabled_json.as_ptr(),
-                    &mut raw,
-                    &mut error,
+                    &raw mut raw,
+                    &raw mut error,
                 ),
                 error,
             )?;
@@ -282,7 +282,7 @@ pub fn legacy_ci_profile(
             profile_id_bytes.as_ptr(),
             profile_id_bytes.len(),
             name.as_ref().map_or(ptr::null(), |value| value.as_ptr()),
-            &mut error,
+            &raw mut error,
         )
     };
     if !error.is_null() {

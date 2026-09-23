@@ -43,7 +43,7 @@ impl MidiInputPort {
             name.as_raw(),
             read_proc,
             ref_con,
-            &mut raw,
+            &raw mut raw,
         ))?;
         Ok(Self {
             raw,
@@ -64,7 +64,7 @@ impl MidiInputPort {
                 client,
                 name.as_raw(),
                 protocol.as_raw(),
-                &mut raw,
+                &raw mut raw,
                 protocol_receive_block(),
             )
         })?;
@@ -169,7 +169,9 @@ impl MidiOutputPort {
     pub(crate) fn new(client: ffi::MIDIClientRef, name: &str) -> MidiResult<Self> {
         let name = OwnedCFString::new(name)?;
         let mut raw = 0;
-        result_from_status(unsafe { ffi::MIDIOutputPortCreate(client, name.as_raw(), &mut raw) })?;
+        result_from_status(unsafe {
+            ffi::MIDIOutputPortCreate(client, name.as_raw(), &raw mut raw)
+        })?;
         Ok(Self { raw })
     }
 
@@ -207,7 +209,7 @@ pub fn flush_output(destination: Option<MidiEndpoint>) -> MidiResult<()> {
     let mut error = ptr::null_mut();
     unsafe {
         private::swift_result(
-            cmr_flush_output(destination.map_or(0, MidiEndpoint::raw), &mut error),
+            cmr_flush_output(destination.map_or(0, MidiEndpoint::raw), &raw mut error),
             error,
         )
     }
@@ -279,7 +281,7 @@ fn protocol_receive_block() -> *const c_void {
         flags: BLOCK_IS_GLOBAL,
         reserved: 0,
         invoke: protocol_receive_block_invoke,
-        descriptor: &RECEIVE_BLOCK_DESCRIPTOR,
+        descriptor: &raw const RECEIVE_BLOCK_DESCRIPTOR,
     }))
     .cast::<c_void>()
 }

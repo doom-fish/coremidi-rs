@@ -196,7 +196,7 @@ impl NetworkSession {
         let mut error = ptr::null_mut();
         unsafe {
             private::swift_result(
-                cmr_network_session_set_connection_policy(policy as i32, &mut error),
+                cmr_network_session_set_connection_policy(policy as i32, &raw mut error),
                 error,
             )
         }
@@ -213,7 +213,7 @@ impl NetworkSession {
         let mut error = ptr::null_mut();
         unsafe {
             private::swift_result(
-                cmr_network_session_add_contact_json(payload.as_ptr(), &mut error),
+                cmr_network_session_add_contact_json(payload.as_ptr(), &raw mut error),
                 error,
             )
         }
@@ -225,7 +225,7 @@ impl NetworkSession {
         let mut error = ptr::null_mut();
         unsafe {
             private::swift_result(
-                cmr_network_session_remove_contact_json(payload.as_ptr(), &mut error),
+                cmr_network_session_remove_contact_json(payload.as_ptr(), &raw mut error),
                 error,
             )
         }
@@ -242,7 +242,7 @@ impl NetworkSession {
         let mut error = ptr::null_mut();
         unsafe {
             private::swift_result(
-                cmr_network_session_add_connection_json(payload.as_ptr(), &mut error),
+                cmr_network_session_add_connection_json(payload.as_ptr(), &raw mut error),
                 error,
             )
         }
@@ -254,7 +254,7 @@ impl NetworkSession {
         let mut error = ptr::null_mut();
         unsafe {
             private::swift_result(
-                cmr_network_session_remove_connection_json(payload.as_ptr(), &mut error),
+                cmr_network_session_remove_connection_json(payload.as_ptr(), &raw mut error),
                 error,
             )
         }
@@ -278,7 +278,7 @@ pub fn activate_bluetooth_connections() -> MidiResult<()> {
     let mut error = ptr::null_mut();
     unsafe {
         private::swift_result(
-            cmr_network_activate_bluetooth_connections(&mut error),
+            cmr_network_activate_bluetooth_connections(&raw mut error),
             error,
         )
     }
@@ -290,7 +290,7 @@ pub fn disconnect_bluetooth(uuid: &str) -> MidiResult<()> {
     let mut error = ptr::null_mut();
     unsafe {
         private::swift_result(
-            cmr_network_disconnect_bluetooth(uuid.as_ptr(), &mut error),
+            cmr_network_disconnect_bluetooth(uuid.as_ptr(), &raw mut error),
             error,
         )
     }

@@ -312,7 +312,7 @@ pub(crate) fn object_integer_property(
 ) -> MidiResult<i32> {
     let mut value = 0_i32;
     result_from_status(unsafe {
-        ffi::MIDIObjectGetIntegerProperty(object, property.as_raw(), &mut value)
+        ffi::MIDIObjectGetIntegerProperty(object, property.as_raw(), &raw mut value)
     })?;
     Ok(value)
 }
@@ -333,7 +333,7 @@ pub(crate) fn object_string_property(
 ) -> MidiResult<String> {
     let mut value = ptr::null();
     result_from_status(unsafe {
-        ffi::MIDIObjectGetStringProperty(object, property.as_raw(), &mut value)
+        ffi::MIDIObjectGetStringProperty(object, property.as_raw(), &raw mut value)
     })?;
     let value = unsafe { OwnedCFString::from_owned_raw(value) };
     string_from_cfstring(value.as_raw())
@@ -362,9 +362,9 @@ pub(crate) fn object_data_property(
             cmr_midi_object_get_data_property(
                 object,
                 property.as_raw(),
-                &mut out_bytes,
-                &mut out_len,
-                &mut error,
+                &raw mut out_bytes,
+                &raw mut out_len,
+                &raw mut error,
             ),
             error,
         )?;
@@ -385,7 +385,7 @@ pub(crate) fn object_set_data_property(
                 property.as_raw(),
                 data.as_ptr(),
                 data.len(),
-                &mut error,
+                &raw mut error,
             ),
             error,
         )
@@ -398,7 +398,7 @@ pub(crate) fn object_dictionary_property_json(
 ) -> MidiResult<Value> {
     let mut error = ptr::null_mut();
     let json = unsafe {
-        cmr_midi_object_get_dictionary_property_json(object, property.as_raw(), &mut error)
+        cmr_midi_object_get_dictionary_property_json(object, property.as_raw(), &raw mut error)
     };
     if !error.is_null() {
         return Err(unsafe { MidiError::Bridge(private::take_c_string(error)) });
@@ -419,7 +419,7 @@ pub(crate) fn object_set_dictionary_property_json(
                 object,
                 property.as_raw(),
                 json.as_ptr(),
-                &mut error,
+                &raw mut error,
             ),
             error,
         )
@@ -428,7 +428,7 @@ pub(crate) fn object_set_dictionary_property_json(
 
 pub(crate) fn object_properties_json(object: ffi::MIDIObjectRef, deep: bool) -> MidiResult<Value> {
     let mut error = ptr::null_mut();
-    let json = unsafe { cmr_midi_object_get_properties_json(object, deep, &mut error) };
+    let json = unsafe { cmr_midi_object_get_properties_json(object, deep, &raw mut error) };
     if !error.is_null() {
         return Err(unsafe { MidiError::Bridge(private::take_c_string(error)) });
     }
@@ -465,7 +465,7 @@ pub fn object_find_by_unique_id(unique_id: i32) -> MidiResult<ResolvedMidiObject
     let mut object = 0;
     let mut object_type = ffi::kMIDIObjectType_Other;
     result_from_status(unsafe {
-        ffi::MIDIObjectFindByUniqueID(unique_id, &mut object, &mut object_type)
+        ffi::MIDIObjectFindByUniqueID(unique_id, &raw mut object, &raw mut object_type)
     })?;
 
     let resolved = match MidiObjectType::from_raw(object_type) {

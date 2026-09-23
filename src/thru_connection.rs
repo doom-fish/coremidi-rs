@@ -502,8 +502,8 @@ impl ThruConnection {
                         .map_or(ptr::null(), |value| value.as_ptr()),
                     bytes.as_ptr(),
                     bytes.len(),
-                    &mut raw,
-                    &mut error,
+                    &raw mut raw,
+                    &raw mut error,
                 ),
                 error,
             )?;
@@ -518,7 +518,12 @@ impl ThruConnection {
         let mut error = ptr::null_mut();
         unsafe {
             private::swift_result(
-                cmr_thru_connection_get_params(self.raw, &mut out_bytes, &mut out_len, &mut error),
+                cmr_thru_connection_get_params(
+                    self.raw,
+                    &raw mut out_bytes,
+                    &raw mut out_len,
+                    &raw mut error,
+                ),
                 error,
             )?;
             let bytes = private::take_bytes(out_bytes, out_len);
@@ -532,7 +537,12 @@ impl ThruConnection {
         let mut error = ptr::null_mut();
         unsafe {
             private::swift_result(
-                cmr_thru_connection_set_params(self.raw, bytes.as_ptr(), bytes.len(), &mut error),
+                cmr_thru_connection_set_params(
+                    self.raw,
+                    bytes.as_ptr(),
+                    bytes.len(),
+                    &raw mut error,
+                ),
                 error,
             )
         }
@@ -548,9 +558,9 @@ impl ThruConnection {
             private::swift_result(
                 cmr_thru_connection_find(
                     owner_id.as_ptr(),
-                    &mut out_bytes,
-                    &mut out_len,
-                    &mut error,
+                    &raw mut out_bytes,
+                    &raw mut out_len,
+                    &raw mut error,
                 ),
                 error,
             )?;
@@ -586,7 +596,7 @@ impl Drop for ThruConnection {
     fn drop(&mut self) {
         let mut error = ptr::null_mut();
         let _ = unsafe {
-            private::swift_result(cmr_thru_connection_dispose(self.raw, &mut error), error)
+            private::swift_result(cmr_thru_connection_dispose(self.raw, &raw mut error), error)
         };
     }
 }

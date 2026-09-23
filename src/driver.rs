@@ -65,7 +65,7 @@ impl DriverOwnedDevice {
                 name.as_raw(),
                 manufacturer.as_raw(),
                 model.as_raw(),
-                &mut raw,
+                &raw mut raw,
             )
         })?;
         Ok(Self { raw })

@@ -121,8 +121,8 @@ impl MidiClient {
                     context.cast(),
                     Some(notification_context_retain),
                     Some(notification_context_release),
-                    &mut bridged_client,
-                    &mut error,
+                    &raw mut bridged_client,
+                    &raw mut error,
                 ),
                 error,
             )
@@ -146,7 +146,7 @@ impl MidiClient {
     /// Wraps the CoreMIDI restart operation for `MidiClient`.
     pub fn restart() -> MidiResult<()> {
         let mut error = ptr::null_mut();
-        unsafe { private::swift_result(cmr_client_restart(&mut error), error) }
+        unsafe { private::swift_result(cmr_client_restart(&raw mut error), error) }
     }
 
     /// Create a `MIDIClientRef` with a CoreMIDI notification callback.
@@ -166,7 +166,7 @@ impl MidiClient {
             name.as_raw(),
             notify_proc,
             notify_ref_con,
-            &mut raw,
+            &raw mut raw,
         ))?;
         Ok(Self {
             raw,

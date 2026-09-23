@@ -225,7 +225,7 @@ impl MidiEntity {
     /// Wraps `MIDIEntityGetDevice`.
     pub fn device(self) -> MidiResult<MidiDevice> {
         let mut raw = 0;
-        result_from_status(unsafe { ffi::MIDIEntityGetDevice(self.raw, &mut raw) })?;
+        result_from_status(unsafe { ffi::MIDIEntityGetDevice(self.raw, &raw mut raw) })?;
         Ok(unsafe { MidiDevice::from_raw(raw) })
     }
 }
@@ -258,7 +258,7 @@ impl MidiEndpoint {
     /// Wraps `MIDIEndpointGetEntity`.
     pub fn entity(self) -> MidiResult<Option<MidiEntity>> {
         let mut raw = 0;
-        result_from_status(unsafe { ffi::MIDIEndpointGetEntity(self.raw, &mut raw) })?;
+        result_from_status(unsafe { ffi::MIDIEndpointGetEntity(self.raw, &raw mut raw) })?;
         Ok((raw != 0).then(|| unsafe { MidiEntity::from_raw(raw) }))
     }
 }
@@ -475,7 +475,7 @@ impl VirtualSource {
     pub(crate) fn new(client: ffi::MIDIClientRef, name: &str) -> MidiResult<Self> {
         let name = OwnedCFString::new(name)?;
         let mut raw = 0;
-        result_from_status(unsafe { ffi::MIDISourceCreate(client, name.as_raw(), &mut raw) })?;
+        result_from_status(unsafe { ffi::MIDISourceCreate(client, name.as_raw(), &raw mut raw) })?;
         Ok(Self { raw })
     }
 
@@ -487,7 +487,12 @@ impl VirtualSource {
         let name = OwnedCFString::new(name)?;
         let mut raw = 0;
         result_from_status(unsafe {
-            ffi::MIDISourceCreateWithProtocol(client, name.as_raw(), protocol.as_raw(), &mut raw)
+            ffi::MIDISourceCreateWithProtocol(
+                client,
+                name.as_raw(),
+                protocol.as_raw(),
+                &raw mut raw,
+            )
         })?;
         Ok(Self { raw })
     }
@@ -547,7 +552,7 @@ impl VirtualDestination {
             name.as_raw(),
             read_proc,
             ref_con,
-            &mut raw,
+            &raw mut raw,
         ))?;
         Ok(Self { raw })
     }
@@ -722,8 +727,8 @@ impl Midi2DeviceInfoHandle {
                     revision_level[1],
                     revision_level[2],
                     revision_level[3],
-                    &mut raw,
-                    &mut error,
+                    &raw mut raw,
+                    &raw mut error,
                 ),
                 error,
             )?;
@@ -780,8 +785,8 @@ impl MutableUmpFunctionBlock {
                     midi1_info,
                     ui_hint,
                     is_enabled,
-                    &mut raw,
-                    &mut error,
+                    &raw mut raw,
+                    &raw mut error,
                 ),
                 error,
             )?;
@@ -799,7 +804,7 @@ impl MutableUmpFunctionBlock {
         let mut error = ptr::null_mut();
         unsafe {
             private::swift_result(
-                cmr_ump_function_block_set_enabled(self.raw, is_enabled, &mut error),
+                cmr_ump_function_block_set_enabled(self.raw, is_enabled, &raw mut error),
                 error,
             )
         }
@@ -811,7 +816,7 @@ impl MutableUmpFunctionBlock {
         let mut error = ptr::null_mut();
         unsafe {
             private::swift_result(
-                cmr_ump_function_block_set_name(self.raw, name.as_ptr(), &mut error),
+                cmr_ump_function_block_set_name(self.raw, name.as_ptr(), &raw mut error),
                 error,
             )
         }
@@ -834,7 +839,7 @@ impl MutableUmpFunctionBlock {
                     direction,
                     midi1_info,
                     ui_hint,
-                    &mut error,
+                    &raw mut error,
                 ),
                 error,
             )
@@ -880,8 +885,8 @@ impl MutableUmpEndpoint {
                 protocol.as_raw(),
                 Some(callback),
                 user_info,
-                &mut raw,
-                &mut error,
+                &raw mut raw,
+                &raw mut error,
             ),
             error,
         )?;
@@ -899,7 +904,7 @@ impl MutableUmpEndpoint {
         let mut error = ptr::null_mut();
         unsafe {
             private::swift_result(
-                cmr_ump_mutable_endpoint_set_name(self.raw, name.as_ptr(), &mut error),
+                cmr_ump_mutable_endpoint_set_name(self.raw, name.as_ptr(), &raw mut error),
                 error,
             )
         }
@@ -920,7 +925,7 @@ impl MutableUmpEndpoint {
                     raw_blocks.as_ptr(),
                     raw_blocks.len(),
                     mark_as_static,
-                    &mut error,
+                    &raw mut error,
                 ),
                 error,
             )
@@ -936,7 +941,7 @@ impl MutableUmpEndpoint {
         let mut error = ptr::null_mut();
         unsafe {
             private::swift_result(
-                cmr_ump_mutable_endpoint_set_enabled(self.raw, is_enabled, &mut error),
+                cmr_ump_mutable_endpoint_set_enabled(self.raw, is_enabled, &raw mut error),
                 error,
             )
         }

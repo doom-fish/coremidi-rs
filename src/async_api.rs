@@ -143,7 +143,7 @@ impl MidiEventStream {
                 client,
                 name.as_raw(),
                 protocol.as_raw(),
-                &mut port,
+                &raw mut port,
                 event_stream_receive_block(),
             )
         });
@@ -225,8 +225,8 @@ impl MidiVirtualDestinationStream {
                     protocol.as_raw(),
                     Some(virtual_destination_stream_callback),
                     sender_ptr.cast::<c_void>(),
-                    &mut endpoint,
-                    &mut error,
+                    &raw mut endpoint,
+                    &raw mut error,
                 ),
                 error,
             )
@@ -297,8 +297,8 @@ impl MidiClientNotificationStream {
                     sender_ptr.cast::<c_void>(),
                     None,
                     None,
-                    &mut bridged_client,
-                    &mut error,
+                    &raw mut bridged_client,
+                    &raw mut error,
                 ),
                 error,
             )
@@ -426,8 +426,8 @@ impl MidiThruConnectionStream {
                     sender_ptr.cast::<c_void>(),
                     None,
                     None,
-                    &mut bridged_client,
-                    &mut error,
+                    &raw mut bridged_client,
+                    &raw mut error,
                 ),
                 error,
             )
@@ -636,7 +636,7 @@ fn event_stream_receive_block() -> *const c_void {
         flags: BLOCK_IS_GLOBAL,
         reserved: 0,
         invoke: event_stream_receive_block_invoke,
-        descriptor: &EVENT_STREAM_BLOCK_DESCRIPTOR,
+        descriptor: &raw const EVENT_STREAM_BLOCK_DESCRIPTOR,
     }))
     .cast::<c_void>()
 }

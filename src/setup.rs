@@ -8,10 +8,10 @@ use crate::packet::MidiProtocol;
 /// Wraps `MIDISetupGetCurrent`.
 pub fn current_setup_xml() -> MidiResult<Vec<u8>> {
     let mut setup = 0;
-    result_from_status(unsafe { ffi::MIDISetupGetCurrent(&mut setup) })?;
+    result_from_status(unsafe { ffi::MIDISetupGetCurrent(&raw mut setup) })?;
 
     let mut data = core::ptr::null();
-    let result = unsafe { ffi::MIDISetupToData(setup, &mut data) };
+    let result = unsafe { ffi::MIDISetupToData(setup, &raw mut data) };
     let dispose_result = unsafe { ffi::MIDISetupDispose(setup) };
     result_from_status(result)?;
     result_from_status(dispose_result)?;
@@ -35,7 +35,7 @@ pub fn current_setup_xml() -> MidiResult<Vec<u8>> {
 pub fn serial_port_owner(port_name: &str) -> MidiResult<Option<String>> {
     let port_name = OwnedCFString::new(port_name)?;
     let mut owner = core::ptr::null();
-    result_from_status(unsafe { ffi::MIDIGetSerialPortOwner(port_name.as_raw(), &mut owner) })?;
+    result_from_status(unsafe { ffi::MIDIGetSerialPortOwner(port_name.as_raw(), &raw mut owner) })?;
     if owner.is_null() {
         return Ok(None);
     }
@@ -48,7 +48,7 @@ pub fn serial_port_owner(port_name: &str) -> MidiResult<Option<String>> {
 /// Wraps `MIDIGetSerialPortDrivers`.
 pub fn serial_port_drivers() -> MidiResult<Vec<String>> {
     let mut array = core::ptr::null();
-    result_from_status(unsafe { ffi::MIDIGetSerialPortDrivers(&mut array) })?;
+    result_from_status(unsafe { ffi::MIDIGetSerialPortDrivers(&raw mut array) })?;
     if array.is_null() {
         return Ok(Vec::new());
     }
@@ -95,7 +95,7 @@ pub fn add_external_device_named(
             name.as_raw(),
             manufacturer.as_raw(),
             model.as_raw(),
-            &mut raw,
+            &raw mut raw,
         )
     })?;
     result_from_status(unsafe { ffi::MIDISetupAddExternalDevice(raw) })?;
@@ -126,7 +126,7 @@ pub fn device_new_entity(
             u8::from(embedded),
             num_source_endpoints,
             num_destination_endpoints,
-            &mut raw,
+            &raw mut raw,
         )
     })?;
     Ok(unsafe { MidiEntity::from_raw(raw) })
@@ -149,7 +149,7 @@ pub fn device_add_entity_deprecated(
             u8::from(embedded),
             num_source_endpoints,
             num_destination_endpoints,
-            &mut raw,
+            &raw mut raw,
         )
     })?;
     Ok(unsafe { MidiEntity::from_raw(raw) })

@@ -35,6 +35,17 @@ extern "C" {
         out_port: *mut ffi::MIDIPortRef,
         error_out: *mut *mut c_char,
     ) -> i32;
+    pub(crate) fn cmr_destination_create_with_protocol(
+        client: ffi::MIDIClientRef,
+        name: *const c_char,
+        protocol: ffi::MIDIProtocolID,
+        callback: Option<MidiEventListReceiveProc>,
+        user_info: *mut c_void,
+        context_retain: Option<unsafe extern "C" fn(*mut c_void)>,
+        context_release: Option<unsafe extern "C" fn(*mut c_void)>,
+        out_endpoint: *mut ffi::MIDIEndpointRef,
+        error_out: *mut *mut c_char,
+    ) -> i32;
 }
 
 pub(crate) fn create_receive_object<T: Send + Sync + 'static>(

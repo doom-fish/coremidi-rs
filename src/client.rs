@@ -13,6 +13,7 @@ use crate::packet::MidiProtocol;
 use crate::port::{MidiInputPort, MidiOutputPort};
 use crate::private;
 use crate::property::MidiObject;
+use crate::receiver::{event_channel, MidiEventReceiver};
 
 extern "C" {
     fn cmr_client_new_with_notifications(
@@ -138,6 +139,17 @@ impl MidiClient {
         MidiInputPort::new_with_protocol(self.raw, name, protocol)
     }
 
+    pub fn input_port_with_receiver(
+        &self,
+        name: &str,
+        protocol: MidiProtocol,
+        capacity: usize,
+    ) -> MidiResult<(MidiInputPort, MidiEventReceiver)> {
+        let (sink, receiver) = event_channel(capacity)?;
+        let port = MidiInputPort::new_with_receiver(self.raw, name, protocol, sink)?;
+        Ok((port, receiver))
+    }
+
     /// Wraps the CoreMIDI virtual source operation for `MidiClient`.
     pub fn virtual_source(&self, name: &str) -> MidiResult<VirtualSource> {
         VirtualSource::new(self.raw, name)
@@ -165,6 +177,17 @@ impl MidiClient {
         ref_con: *mut c_void,
     ) -> MidiResult<VirtualDestination> {
         VirtualDestination::new(self.raw, name, read_proc, ref_con)
+    }
+
+    pub fn virtual_destination_with_receiver(
+        &self,
+        name: &str,
+        protocol: MidiProtocol,
+        capacity: usize,
+    ) -> MidiResult<(VirtualDestination, MidiEventReceiver)> {
+        let (sink, receiver) = event_channel(capacity)?;
+        let destination = VirtualDestination::new_with_receiver(self.raw, name, protocol, sink)?;
+        Ok((destination, receiver))
     }
 
     #[must_use]

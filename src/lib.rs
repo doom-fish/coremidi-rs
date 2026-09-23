@@ -53,6 +53,7 @@ pub mod port;
 pub(crate) mod private;
 /// CoreMIDI property wrappers.
 pub mod property;
+pub mod receiver;
 /// CoreMIDI setup-management wrappers.
 pub mod setup;
 /// CoreMIDI thru-connection wrappers.
@@ -101,6 +102,7 @@ pub use port::{flush_output, MidiInputPort, MidiOutputPort, MidiProtocolReadProc
 pub use property::{
     object_find_by_unique_id, MidiObject, MidiObjectType, MidiProperty, ResolvedMidiObject,
 };
+pub use receiver::{MidiEventReceiver, MidiEventRecord};
 pub use setup::{
     add_driver_device, add_external_device_named, current_setup_xml, device_add_entity_deprecated,
     device_new_entity, device_remove_entity, entity_set_endpoint_counts, remove_device,
@@ -117,9 +119,10 @@ pub mod prelude {
         destination, destination_count, destinations, device, device_count, devices,
         external_device, external_device_count, external_devices, source, source_count, sources,
         EventListBuffer, EventListRef, MidiClient, MidiDevice, MidiEndpoint, MidiEntity, MidiError,
-        MidiEventPacketRef, MidiInputPort, MidiObject, MidiOutputPort, MidiPacketRef, MidiProperty,
-        MidiProtocol, MidiProtocolReadProc, MidiResult, MidiStatus, Notification,
-        NotificationMessageId, PacketListBuffer, PacketListRef, VirtualDestination, VirtualSource,
+        MidiEventPacketRef, MidiEventReceiver, MidiEventRecord, MidiInputPort, MidiObject,
+        MidiOutputPort, MidiPacketRef, MidiProperty, MidiProtocol, MidiProtocolReadProc,
+        MidiResult, MidiStatus, Notification, NotificationMessageId, PacketListBuffer,
+        PacketListRef, VirtualDestination, VirtualSource,
     };
 
     #[cfg(feature = "async")]

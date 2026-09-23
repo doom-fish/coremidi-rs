@@ -491,3 +491,43 @@ private func cmrWriteNSError(
     cmrWriteError(errorOut, error?.localizedDescription ?? "unknown CoreMIDI bridge error")
     return CMR_FRAMEWORK_ERROR
 }
+
+@_cdecl("cmr_destination_create_with_protocol")
+public func cmr_destination_create_with_protocol(
+    _ client: MIDIClientRef,
+    _ name: UnsafePointer<CChar>?,
+    _ protocolID: MIDIProtocolID,
+    _ callback: CMRReceiveBlockCallback?,
+    _ userInfo: UnsafeMutableRawPointer?,
+    _ contextRetain: CMRContextRetainCallback?,
+    _ contextRelease: CMRContextReleaseCallback?,
+    _ outEndpoint: UnsafeMutablePointer<MIDIEndpointRef>?,
+    _ errorOut: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
+) -> Int32 {
+    guard let outEndpoint else {
+        cmrWriteError(errorOut, "output endpoint pointer must not be null")
+        return CMR_INVALID_ARGUMENT
+    }
+    outEndpoint.pointee = 0
+
+    do {
+        let destinationName = try cmrRequireString(name, "destination name")
+        guard let callback else {
+            throw cmrError("callback must not be null")
+        }
+        let protocolValue = try cmrProtocol(protocolID)
+        let context = CMRRetainedContext(userInfo, retain: contextRetain, release: contextRelease)
+        let status = MIDIDestinationCreateWithProtocol(
+            client,
+            destinationName as CFString,
+            protocolValue,
+            outEndpoint
+        ) { eventList, srcConnRefCon in
+            callback(context.pointer, eventList, srcConnRefCon)
+        }
+        return cmrCheckStatus(status, errorOut)
+    } catch {
+        cmrWriteError(errorOut, error.localizedDescription)
+        return CMR_INVALID_ARGUMENT
+    }
+}

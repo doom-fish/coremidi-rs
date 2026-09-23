@@ -3,6 +3,7 @@ use core::marker::PhantomData;
 use core::ptr;
 use std::fmt;
 
+use doom_fish_utils::callback_context::CallbackContext;
 use serde::Deserialize;
 
 use crate::cf::OwnedCFString;
@@ -11,6 +12,7 @@ use crate::ffi;
 use crate::packet::{EventListBuffer, MidiProtocol, PacketListBuffer};
 use crate::private;
 use crate::property::MidiObject;
+use crate::receiver::{destination_receiver_trampoline, EventSink};
 
 extern "C" {
     fn cmr_ump_endpoint_manager_constants_json() -> *mut c_char;
@@ -536,6 +538,7 @@ impl MidiObject for VirtualSource {
 /// Wraps `MIDIEndpointRef`.
 pub struct VirtualDestination {
     raw: ffi::MIDIEndpointRef,
+    receiver: Option<CallbackContext<EventSink>>,
 }
 
 impl VirtualDestination {
@@ -554,7 +557,30 @@ impl VirtualDestination {
             ref_con,
             &raw mut raw,
         ))?;
-        Ok(Self { raw })
+        Ok(Self {
+            raw,
+            receiver: None,
+        })
+    }
+
+    pub(crate) fn new_with_receiver(
+        client: ffi::MIDIClientRef,
+        name: &str,
+        protocol: MidiProtocol,
+        sink: CallbackContext<EventSink>,
+    ) -> MidiResult<Self> {
+        let raw = private::create_receive_object(
+            private::cmr_destination_create_with_protocol,
+            client,
+            name,
+            protocol,
+            destination_receiver_trampoline,
+            &sink,
+        )?;
+        Ok(Self {
+            raw,
+            receiver: Some(sink),
+        })
     }
 
     #[must_use]
@@ -572,6 +598,9 @@ impl VirtualDestination {
 
 impl Drop for VirtualDestination {
     fn drop(&mut self) {
+        if let Some(receiver) = &self.receiver {
+            receiver.deactivate();
+        }
         let _ = unsafe { ffi::MIDIEndpointDispose(self.raw) };
     }
 }

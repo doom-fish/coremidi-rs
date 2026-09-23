@@ -11,6 +11,7 @@ use crate::ffi;
 use crate::packet::{EventListBuffer, MidiProtocol, PacketListBuffer};
 use crate::private;
 use crate::property::MidiObject;
+use crate::receiver::{port_receiver_trampoline, EventSink};
 
 extern "C" {
     fn cmr_flush_output(
@@ -33,6 +34,7 @@ pub struct MidiInputPort {
 enum InputPortKind {
     Legacy,
     Callbacks(CallbackContext<CallbackTable>),
+    Receiver(CallbackContext<EventSink>),
 }
 
 impl MidiInputPort {
@@ -74,6 +76,26 @@ impl MidiInputPort {
         Ok(Self {
             raw,
             kind: InputPortKind::Callbacks(table),
+        })
+    }
+
+    pub(crate) fn new_with_receiver(
+        client: ffi::MIDIClientRef,
+        name: &str,
+        protocol: MidiProtocol,
+        sink: CallbackContext<EventSink>,
+    ) -> MidiResult<Self> {
+        let raw = private::create_receive_object(
+            private::cmr_input_port_create_with_protocol,
+            client,
+            name,
+            protocol,
+            port_receiver_trampoline,
+            &sink,
+        )?;
+        Ok(Self {
+            raw,
+            kind: InputPortKind::Receiver(sink),
         })
     }
 
@@ -131,6 +153,17 @@ impl MidiInputPort {
         result
     }
 
+    pub fn connect(&self, source: MidiEndpoint) -> MidiResult<()> {
+        if !matches!(self.kind, InputPortKind::Receiver(_)) {
+            return Err(MidiError::Unsupported(
+                "connect requires a port created with MidiClient::input_port_with_receiver".into(),
+            ));
+        }
+        result_from_status(unsafe {
+            ffi::MIDIPortConnectSource(self.raw, source.raw(), source_ref_con(source.raw()))
+        })
+    }
+
     /// Wraps `MIDIPortDisconnectSource`.
     pub fn disconnect_source(&self, source: MidiEndpoint) -> MidiResult<()> {
         let result =
@@ -153,6 +186,7 @@ impl Drop for MidiInputPort {
         match &self.kind {
             InputPortKind::Legacy => {}
             InputPortKind::Callbacks(table) => table.deactivate(),
+            InputPortKind::Receiver(sink) => sink.deactivate(),
         }
         let _ = unsafe { ffi::MIDIPortDispose(self.raw) };
         if let InputPortKind::Callbacks(table) = &self.kind {

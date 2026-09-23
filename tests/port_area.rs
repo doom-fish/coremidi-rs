@@ -154,9 +154,29 @@ fn input_ports_reject_connections_meant_for_another_kind() -> MidiResult<()> {
     let source = client.virtual_source("port area kinds source")?;
     let protocol_port =
         client.input_port_with_protocol("port area kinds protocol", MidiProtocol::Midi1)?;
+    let (receiver_port, _receiver) =
+        client.input_port_with_receiver("port area kinds receiver", MidiProtocol::Midi1, 4)?;
 
     assert!(matches!(
         unsafe { protocol_port.connect_source(source.endpoint(), ptr::null_mut()) },
+        Err(MidiError::Unsupported(_))
+    ));
+    assert!(matches!(
+        protocol_port.connect(source.endpoint()),
+        Err(MidiError::Unsupported(_))
+    ));
+    assert!(matches!(
+        unsafe {
+            receiver_port.connect_source_with_protocol_callback(
+                source.endpoint(),
+                count_call,
+                ptr::null_mut(),
+            )
+        },
+        Err(MidiError::Unsupported(_))
+    ));
+    assert!(matches!(
+        unsafe { receiver_port.connect_source(source.endpoint(), ptr::null_mut()) },
         Err(MidiError::Unsupported(_))
     ));
     Ok(())

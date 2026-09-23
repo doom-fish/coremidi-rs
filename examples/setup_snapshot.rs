@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use coremidi::setup::{current_setup_xml, serial_port_drivers};
 
 fn main() {

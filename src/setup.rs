@@ -5,16 +5,17 @@ use crate::error::{result_from_status, MidiResult};
 use crate::ffi;
 use crate::packet::MidiProtocol;
 
+#[deprecated(
+    since = "0.6.0",
+    note = "MIDISetupGetCurrent and MIDISetupToData are no longer supported since macOS 10.6"
+)]
 /// Wraps `MIDISetupGetCurrent`.
 pub fn current_setup_xml() -> MidiResult<Vec<u8>> {
     let mut setup = 0;
     result_from_status(unsafe { ffi::MIDISetupGetCurrent(&raw mut setup) })?;
 
     let mut data = core::ptr::null();
-    let result = unsafe { ffi::MIDISetupToData(setup, &raw mut data) };
-    let dispose_result = unsafe { ffi::MIDISetupDispose(setup) };
-    result_from_status(result)?;
-    result_from_status(dispose_result)?;
+    result_from_status(unsafe { ffi::MIDISetupToData(setup, &raw mut data) })?;
 
     if data.is_null() {
         return Ok(Vec::new());
@@ -24,13 +25,21 @@ pub fn current_setup_xml() -> MidiResult<Vec<u8>> {
         let len = ffi::CFDataGetLength(data);
         let len = usize::try_from(len).unwrap_or(0);
         let ptr = ffi::CFDataGetBytePtr(data);
-        let bytes = std::slice::from_raw_parts(ptr, len).to_vec();
+        let bytes = if ptr.is_null() || len == 0 {
+            Vec::new()
+        } else {
+            std::slice::from_raw_parts(ptr, len).to_vec()
+        };
         ffi::CFRelease(data.cast());
         bytes
     };
     Ok(bytes)
 }
 
+#[deprecated(
+    since = "0.6.0",
+    note = "MIDIGetSerialPortOwner is no longer supported since macOS 10.6"
+)]
 /// Wraps `MIDIGetSerialPortOwner`.
 pub fn serial_port_owner(port_name: &str) -> MidiResult<Option<String>> {
     let port_name = OwnedCFString::new(port_name)?;
@@ -45,6 +54,10 @@ pub fn serial_port_owner(port_name: &str) -> MidiResult<Option<String>> {
     Ok(Some(value))
 }
 
+#[deprecated(
+    since = "0.6.0",
+    note = "MIDIGetSerialPortDrivers is no longer supported since macOS 10.6"
+)]
 /// Wraps `MIDIGetSerialPortDrivers`.
 pub fn serial_port_drivers() -> MidiResult<Vec<String>> {
     let mut array = core::ptr::null();
@@ -132,6 +145,10 @@ pub fn device_new_entity(
     Ok(unsafe { MidiEntity::from_raw(raw) })
 }
 
+#[deprecated(
+    since = "0.6.0",
+    note = "MIDIDeviceAddEntity is deprecated in favour of MIDIDeviceNewEntity; use device_new_entity"
+)]
 /// Wraps `MIDIDeviceAddEntity`.
 pub fn device_add_entity_deprecated(
     device: MidiDevice,

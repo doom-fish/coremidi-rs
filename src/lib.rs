@@ -103,6 +103,7 @@ pub use property::{
     object_find_by_unique_id, MidiObject, MidiObjectType, MidiProperty, ResolvedMidiObject,
 };
 pub use receiver::{MidiEventReceiver, MidiEventRecord};
+#[allow(deprecated)]
 pub use setup::{
     add_driver_device, add_external_device_named, current_setup_xml, device_add_entity_deprecated,
     device_new_entity, device_remove_entity, entity_set_endpoint_counts, remove_device,

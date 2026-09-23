@@ -202,3 +202,35 @@ fn packet_list_buffer_reports_a_full_buffer() {
     );
     assert_eq!(buffer.as_packet_list().packet_count(), 0);
 }
+
+#[test]
+fn packet_next_walks_an_unaligned_packet() {
+    let mut storage = [0_u64; 8];
+    let packet = unsafe { storage.as_mut_ptr().cast::<u8>().add(1) };
+    unsafe {
+        packet.cast::<u64>().write_unaligned(7);
+        packet.add(8).cast::<u16>().write_unaligned(3);
+    }
+
+    let next = unsafe { coremidi::ffi::MIDIPacketNext(packet.cast()) } as usize;
+
+    let data_end = packet as usize + 13;
+    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
+    assert_eq!(next, (data_end + 3) & !3);
+    #[cfg(not(any(target_arch = "arm", target_arch = "aarch64")))]
+    assert_eq!(next, data_end);
+}
+
+#[test]
+fn event_packet_next_walks_an_unaligned_packet() {
+    let mut storage = [0_u64; 8];
+    let packet = unsafe { storage.as_mut_ptr().cast::<u8>().add(2) };
+    unsafe {
+        packet.cast::<u64>().write_unaligned(7);
+        packet.add(8).cast::<u32>().write_unaligned(2);
+    }
+
+    let next = unsafe { coremidi::ffi::MIDIEventPacketNext(packet.cast()) } as usize;
+
+    assert_eq!(next, packet as usize + 12 + 2 * 4);
+}

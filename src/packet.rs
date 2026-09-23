@@ -661,7 +661,7 @@ impl<'a> Iterator for PacketIter<'a> {
         }
 
         let current = unsafe { MidiPacketRef::from_ptr(self.next_packet) };
-        self.next_packet = unsafe { midi_packet_next(self.next_packet) };
+        self.next_packet = unsafe { ffi::MIDIPacketNext(self.next_packet) };
         self.remaining -= 1;
         Some(current)
     }
@@ -863,7 +863,7 @@ impl<'a> Iterator for EventIter<'a> {
         }
 
         let current = unsafe { MidiEventPacketRef::from_ptr(self.next_packet) };
-        self.next_packet = unsafe { midi_event_packet_next(self.next_packet) };
+        self.next_packet = unsafe { ffi::MIDIEventPacketNext(self.next_packet) };
         self.remaining -= 1;
         Some(current)
     }
@@ -871,27 +871,4 @@ impl<'a> Iterator for EventIter<'a> {
 
 fn storage_offset<T>(storage: &[u64], packet: *const T) -> usize {
     packet as usize - storage.as_ptr() as usize
-}
-
-unsafe fn midi_packet_next(packet: *const ffi::MIDIPacket) -> *const ffi::MIDIPacket {
-    let len = usize::from(ptr::addr_of!((*packet).length).read_unaligned());
-    let data_end = ptr::addr_of!((*packet).data).cast::<u8>().add(len) as usize;
-
-    #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
-    let next = (data_end + 3) & !3;
-    #[cfg(not(any(target_arch = "arm", target_arch = "aarch64")))]
-    let next = data_end;
-
-    next as *const ffi::MIDIPacket
-}
-
-unsafe fn midi_event_packet_next(
-    packet: *const ffi::MIDIEventPacket,
-) -> *const ffi::MIDIEventPacket {
-    let word_count =
-        usize::try_from(ptr::addr_of!((*packet).wordCount).read_unaligned()).unwrap_or(0);
-    ptr::addr_of!((*packet).words)
-        .cast::<u32>()
-        .add(word_count)
-        .cast()
 }

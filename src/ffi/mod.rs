@@ -774,17 +774,19 @@ pub(crate) use raw_corefoundation::*;
 
 #[must_use]
 pub unsafe fn MIDIEventPacketNext(packet: *const MIDIEventPacket) -> *const MIDIEventPacket {
+    let word_count = core::ptr::addr_of!((*packet).wordCount).read_unaligned();
     core::ptr::addr_of!((*packet).words)
         .cast::<u32>()
-        .add((*packet).wordCount as usize)
+        .add(word_count as usize)
         .cast()
 }
 
 #[must_use]
 pub unsafe fn MIDIPacketNext(packet: *const MIDIPacket) -> *const MIDIPacket {
+    let length = core::ptr::addr_of!((*packet).length).read_unaligned();
     let data_end = core::ptr::addr_of!((*packet).data)
         .cast::<u8>()
-        .add((*packet).length as usize) as usize;
+        .add(usize::from(length)) as usize;
     #[cfg(any(target_arch = "arm", target_arch = "aarch64"))]
     let next = (data_end + 3) & !3;
     #[cfg(not(any(target_arch = "arm", target_arch = "aarch64")))]

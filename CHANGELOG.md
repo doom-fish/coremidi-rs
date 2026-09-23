@@ -1,5 +1,79 @@
 # Changelog
 
+All notable changes to `coremidi-rs` are documented here.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.6.0] - Unreleased
+
+### Security
+
+- `PacketListBuffer` and `EventListBuffer` derived `Clone` over a raw pointer into their
+  storage, so `add_packet` on a clone wrote into the original buffer, or into freed memory once
+  the original was dropped. They now keep the write position as an offset into their own storage.
+- The async notification and thru-connection streams gave the Swift notification block no
+  reference to their context and freed it right after releasing the client; the event,
+  virtual-destination and MIDI-CI discovery streams handed CoreMIDI or KVO an unretained sender
+  that `Drop` freed straight after unregistering. Dropping a stream while a delivery was running
+  was a use-after-free. Each stream context is now a `CallbackContext` that the block or observer
+  holds a reference to, and `Drop` deactivates it before unregistering.
+- Dropping a `MidiInputPort` freed its protocol connection contexts right after
+  `MIDIPortDispose`, while a callback could still be running on the receive thread.
+
+### Fixed
+
+- `MidiInputPort::disconnect_source` frees the connection context that
+  `connect_source_with_protocol_callback` created (one leaked per connect/disconnect cycle).
+  Disconnecting, connecting the same source again (which replaces its callback) and dropping the
+  port all wait for a running callback, so the caller's `ref_con` can be freed afterwards.
+- `MidiClient::with_notification_handler` runs the handler behind a mutex (notifications on
+  different threads aliased the `FnMut`), contains panics, and stops calling it once the client
+  is dropped.
+- `setup::current_setup_xml` no longer disposes the setup returned by `MIDISetupGetCurrent`,
+  which the system owns, and checks `CFDataGetBytePtr` for NULL.
+- `ffi::MIDIPacketNext` read the packed `length` field through a pointer that is misaligned on
+  x86_64. It and `ffi::MIDIEventPacketNext` now use unaligned reads.
+- `COVERAGE_AUDIT.md` listed 15 wrapped symbols, including `MIDIDestinationCreate`, as exempt and
+  counted `MIDIEventListForEachEvent` as wrapped. Both audit files now say what their numbers
+  measure.
+
+### Changed
+
+- **Breaking:** `MidiInputPort::connect_source` returns `MidiError::Unsupported` unless the port
+  was created with `MidiClient::input_port` (`MIDIReadProc`). Protocol ports passed the caller's
+  `connRefCon` to a callback that read it as an internal context.
+- **Breaking:** The Swift bridge declares macOS 11 as its minimum. The crate already linked the
+  macOS 11 MIDI 2.0 functions, so it could not run on macOS 10.15.
+- Protocol input ports and destinations with receive blocks are created by the Swift bridge; the
+  block holds a reference to the Rust context until CoreMIDI releases it. Connections are keyed
+  by source endpoint rather than by a heap pointer passed as `connRefCon`.
+- `PacketListBuffer`, `EventListBuffer` and `MidiInputPort` are now `Send` and `Sync`.
+- `MidiEventStream` and `MidiVirtualDestinationStream` document that they allocate an
+  `OwnedEventList` on the receive thread.
+- `doom-fish-utils` (`>=0.4.1, <0.5`) is now a required dependency, and the `async` feature no
+  longer enables it. `apple-cf` moves to `>=0.11, <0.12`, and `rust-version` is now 1.82.
+
+### Deprecated
+
+- `setup::current_setup_xml`, `setup::serial_port_owner` and `setup::serial_port_drivers` wrap
+  APIs that have been "No longer supported" since macOS 10.6 (they return -4 on current systems).
+  `setup::device_add_entity_deprecated` is superseded by `setup::device_new_entity`.
+
+### Added
+
+- `receiver` module with `MidiEventReceiver` and `MidiEventRecord`, created by
+  `MidiClient::input_port_with_receiver` and `MidiClient::virtual_destination_with_receiver`;
+  `MidiInputPort::connect` connects a source to a receiver port. The receive thread copies each
+  event packet into a preallocated ring of fixed-size records without locking or allocating, and
+  overwrites the oldest record when the ring is full (`dropped_count()`).
+
+## [0.5.4] - 2026-06-06
+
+- Hardened the client notification FFI (the Swift notification block holds a reference to the
+  handler context) and bounded the `MIDIEventPacket` copy in `OwnedEventList::copy_from` to the
+  packet's word count.
+
 ## [0.5.3] - 2026-05-20
 
 - Widen `doom-fish-utils` dependency bound to `<0.4` so the 0.3.x SPSC-ring release resolves cleanly. No source changes.

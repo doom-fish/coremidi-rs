@@ -37,7 +37,7 @@ By default, the crate exposes safe wrappers and raw CoreMIDI data types. To expo
 
 ```toml
 [dependencies]
-coremidi-rs = { version = "0.3.0", features = ["raw-ffi"] }
+coremidi-rs = { version = "0.6.0", features = ["raw-ffi"] }
 ```
 
 Without `raw-ffi`, the raw function declarations stay crate-private and back the safe APIs.
@@ -121,7 +121,7 @@ Enable the `async` feature to get executor-agnostic event streams backed by
 
 ```toml
 [dependencies]
-coremidi-rs = { version = "0.3", features = ["async"] }
+coremidi-rs = { version = "0.6", features = ["async"] }
 ```
 
 | Stream type | Item | Source |

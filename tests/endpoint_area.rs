@@ -1,8 +1,11 @@
+mod common;
+
 use coremidi::endpoint::UmpEndpointManager;
 use coremidi::prelude::*;
 
 #[test]
 fn endpoint_area_counts_are_iterable() -> coremidi::MidiResult<()> {
+    common::connect_midi_server();
     assert_eq!(devices().count(), device_count());
     assert_eq!(sources().count(), source_count());
     assert_eq!(destinations().count(), destination_count());

@@ -1,3 +1,5 @@
+mod common;
+
 use coremidi::capability::{
     ci_device_manager_constants, discovered_ci_devices, legacy_ci_profile, CiManagementMessageType,
     CiProcessInquiryMessageType, CiProfileMessageType, CiProfileState,
@@ -6,6 +8,7 @@ use coremidi::capability::{
 
 #[test]
 fn capability_area_snapshot_calls_work() -> coremidi::MidiResult<()> {
+    common::connect_midi_server();
     assert!(discovered_ci_devices().is_ok());
 
     let constants = ci_device_manager_constants()?;

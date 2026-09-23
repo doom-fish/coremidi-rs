@@ -1,7 +1,10 @@
+mod common;
+
 use coremidi::network::{NetworkConnection, NetworkHost, NetworkSession};
 
 #[test]
 fn network_area_exposes_session_metadata() {
+    common::connect_midi_server();
     let session = NetworkSession::default();
     let constants = NetworkSession::constants().expect("network constants available");
     assert!(!constants.bonjour_service_type.is_empty());

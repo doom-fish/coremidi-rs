@@ -1,8 +1,11 @@
+mod common;
+
 use coremidi::prelude::*;
 use coremidi::property::MidiObjectType;
 
 #[test]
 fn property_area_exposes_constants_and_types() {
+    common::connect_midi_server();
     assert_eq!(
         MidiObjectType::from_raw(MidiObjectType::Device.raw()),
         MidiObjectType::Device

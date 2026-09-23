@@ -1,15 +1,12 @@
 #![cfg(feature = "async")]
 
 use core::ffi::{c_char, c_void};
-use std::ffi::CStr;
-use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
-use std::sync::OnceLock;
 
+use doom_fish_utils::callback_context::CallbackContext;
 use doom_fish_utils::stream::{AsyncStreamSender, BoundedAsyncStream, NextItem};
 
 use crate::capability::{discovered_ci_devices, CiDeviceInfo};
-use crate::cf::OwnedCFString;
 use crate::error::{result_from_status, MidiError, MidiResult};
 use crate::ffi;
 use crate::notification::Notification;
@@ -26,22 +23,16 @@ extern "C" {
         out_client: *mut *mut c_void,
         error_out: *mut *mut c_char,
     ) -> i32;
-    fn cmr_vdest_stream_create(
-        client: ffi::MIDIClientRef,
-        name: *const c_char,
-        protocol: ffi::MIDIProtocolID,
-        callback: Option<unsafe extern "C" fn(*const ffi::MIDIEventList, *mut c_void)>,
-        ctx: *mut c_void,
-        out_endpoint: *mut ffi::MIDIEndpointRef,
-        error_out: *mut *mut c_char,
-    ) -> i32;
     fn cmr_ci_discovery_subscribe(
         callback: Option<unsafe extern "C" fn(*mut c_void)>,
         ctx: *mut c_void,
+        context_retain: Option<unsafe extern "C" fn(*mut c_void)>,
+        context_release: Option<unsafe extern "C" fn(*mut c_void)>,
     ) -> *mut c_void;
     fn cmr_ci_discovery_unsubscribe(handle: *mut c_void);
-    static _NSConcreteGlobalBlock: c_void;
 }
+
+type StreamContext<T> = CallbackContext<AsyncStreamSender<T>>;
 
 #[derive(Debug, Clone)]
 /// Wraps `MIDIEventList`.
@@ -61,11 +52,11 @@ impl OwnedEventList {
     /// This function allocates a [`Vec`] to hold the copied packets.  When
     /// called from the `MidiEventStream` or `MidiVirtualDestinationStream`
     /// receive callbacks it therefore **allocates on the CoreMIDI real-time
-    /// server thread**.  If strict real-time behaviour is required, use a
-    /// raw [`MidiInputPort`](crate::port::MidiInputPort) with a custom
-    /// [`MidiProtocolReadProc`](crate::port::MidiProtocolReadProc) that
-    /// operates on the borrowed `*const MIDIEventList` directly, without
-    /// copying.
+    /// server thread**.  If strict real-time behaviour is required, receive
+    /// through a [`MidiEventReceiver`](crate::receiver::MidiEventReceiver)
+    /// from [`MidiClient::input_port_with_receiver`](crate::MidiClient::input_port_with_receiver)
+    /// or [`MidiClient::virtual_destination_with_receiver`](crate::MidiClient::virtual_destination_with_receiver),
+    /// which copy each packet into a preallocated ring without allocating.
     ///
     /// # Safety
     ///
@@ -112,11 +103,16 @@ impl OwnedEventList {
 
 #[derive(Debug)]
 /// Wraps `MIDIEventList`.
+///
+/// Each received event list is copied into a heap-allocated [`OwnedEventList`] on the
+/// CoreMIDI receive thread; use
+/// [`MidiClient::input_port_with_receiver`](crate::MidiClient::input_port_with_receiver)
+/// to receive without allocating.
 pub struct MidiEventStream {
     source: ffi::MIDIEndpointRef,
     port: ffi::MIDIPortRef,
     stream: BoundedAsyncStream<OwnedEventList>,
-    sender_ptr: *mut AsyncStreamSender<OwnedEventList>,
+    context: StreamContext<OwnedEventList>,
 }
 
 impl MidiEventStream {
@@ -127,75 +123,53 @@ impl MidiEventStream {
         protocol: MidiProtocol,
         capacity: usize,
     ) -> MidiResult<Self> {
-        if capacity == 0 {
-            return Err(MidiError::InvalidArgument(
-                "async stream capacity must be > 0".into(),
-            ));
-        }
+        let (stream, context) = new_stream_pair(capacity)?;
+        let port = private::create_receive_object(
+            private::cmr_input_port_create_with_protocol,
+            client,
+            &format!("coremidi-rs async event stream {source}"),
+            protocol,
+            event_list_stream_callback,
+            &context,
+        )?;
 
-        let port_name = format!("coremidi-rs async event stream {source}");
-        let name = OwnedCFString::new(&port_name)?;
-        let (stream, sender_ptr) = new_stream_pair(capacity);
-        let mut port = 0;
-
-        let create_result = result_from_status(unsafe {
-            ffi::MIDIInputPortCreateWithProtocol(
-                client,
-                name.as_raw(),
-                protocol.as_raw(),
-                &raw mut port,
-                event_stream_receive_block(),
-            )
+        let connect_result = result_from_status(unsafe {
+            ffi::MIDIPortConnectSource(port, source, ptr::null_mut())
         });
-
-        if let Err(error) = create_result {
-            unsafe { drop_sender(sender_ptr) };
+        if let Err(error) = connect_result {
+            context.deactivate();
+            let _ = unsafe { ffi::MIDIPortDispose(port) };
             return Err(error);
         }
 
-        let connect_result = result_from_status(unsafe {
-            ffi::MIDIPortConnectSource(port, source, sender_ptr.cast::<c_void>())
-        });
-
-        match connect_result {
-            Ok(()) => Ok(Self {
-                source,
-                port,
-                stream,
-                sender_ptr,
-            }),
-            Err(error) => {
-                let _ = unsafe { ffi::MIDIPortDispose(port) };
-                unsafe { drop_sender(sender_ptr) };
-                Err(error)
-            }
-        }
+        Ok(Self {
+            source,
+            port,
+            stream,
+            context,
+        })
     }
 }
 
 impl Drop for MidiEventStream {
     fn drop(&mut self) {
-        // SAFETY: `self.port` and `self.source` are valid refs created during
-        // `subscribe`.  Disconnecting and disposing the port before dropping
-        // the sender ensures CoreMIDI delivers no further callbacks that
-        // dereference `sender_ptr`.
+        self.context.deactivate();
         let _ = unsafe { ffi::MIDIPortDisconnectSource(self.port, self.source) };
         let _ = unsafe { ffi::MIDIPortDispose(self.port) };
-        // SAFETY: `sender_ptr` was produced by `Box::into_raw` in
-        // `new_stream_pair` and is freed exactly once here.
-        unsafe { drop_sender(self.sender_ptr) };
     }
 }
 
-unsafe impl Send for MidiEventStream {}
-unsafe impl Sync for MidiEventStream {}
-
 #[derive(Debug)]
 /// Mirrors the CoreMIDI MIDI virtual destination stream payload.
+///
+/// Each received event list is copied into a heap-allocated [`OwnedEventList`] on the
+/// CoreMIDI receive thread; use
+/// [`MidiClient::virtual_destination_with_receiver`](crate::MidiClient::virtual_destination_with_receiver)
+/// to receive without allocating.
 pub struct MidiVirtualDestinationStream {
     endpoint: ffi::MIDIEndpointRef,
     stream: BoundedAsyncStream<OwnedEventList>,
-    sender_ptr: *mut AsyncStreamSender<OwnedEventList>,
+    context: StreamContext<OwnedEventList>,
 }
 
 impl MidiVirtualDestinationStream {
@@ -206,43 +180,20 @@ impl MidiVirtualDestinationStream {
         protocol: MidiProtocol,
         capacity: usize,
     ) -> MidiResult<Self> {
-        if capacity == 0 {
-            return Err(MidiError::InvalidArgument(
-                "async stream capacity must be > 0".into(),
-            ));
-        }
-
-        let name = private::to_cstring(name)?;
-        let (stream, sender_ptr) = new_stream_pair(capacity);
-        let mut endpoint = 0;
-        let mut error = ptr::null_mut();
-
-        let result = unsafe {
-            private::swift_result(
-                cmr_vdest_stream_create(
-                    client,
-                    name.as_ptr(),
-                    protocol.as_raw(),
-                    Some(virtual_destination_stream_callback),
-                    sender_ptr.cast::<c_void>(),
-                    &raw mut endpoint,
-                    &raw mut error,
-                ),
-                error,
-            )
-        };
-
-        match result {
-            Ok(()) => Ok(Self {
-                endpoint,
-                stream,
-                sender_ptr,
-            }),
-            Err(error) => {
-                unsafe { drop_sender(sender_ptr) };
-                Err(error)
-            }
-        }
+        let (stream, context) = new_stream_pair(capacity)?;
+        let endpoint = private::create_receive_object(
+            private::cmr_destination_create_with_protocol,
+            client,
+            name,
+            protocol,
+            event_list_stream_callback,
+            &context,
+        )?;
+        Ok(Self {
+            endpoint,
+            stream,
+            context,
+        })
     }
 
     #[must_use]
@@ -254,89 +205,36 @@ impl MidiVirtualDestinationStream {
 
 impl Drop for MidiVirtualDestinationStream {
     fn drop(&mut self) {
-        // SAFETY: `self.endpoint` is a valid `MIDIEndpointRef` created in
-        // `create` via the Swift bridge.  Disposing the endpoint before
-        // dropping the sender ensures no further callbacks reference `sender_ptr`.
+        self.context.deactivate();
         let _ = unsafe { ffi::MIDIEndpointDispose(self.endpoint) };
-        // SAFETY: `sender_ptr` was produced by `Box::into_raw` in
-        // `new_stream_pair` and is freed exactly once here.
-        unsafe { drop_sender(self.sender_ptr) };
     }
 }
-
-unsafe impl Send for MidiVirtualDestinationStream {}
-unsafe impl Sync for MidiVirtualDestinationStream {}
 
 #[derive(Debug)]
 /// Mirrors the CoreMIDI MIDI client notification stream payload.
 pub struct MidiClientNotificationStream {
     bridged_client: *mut c_void,
     stream: BoundedAsyncStream<Notification>,
-    sender_ptr: *mut AsyncStreamSender<Notification>,
+    context: StreamContext<Notification>,
 }
 
 impl MidiClientNotificationStream {
     /// Wraps `MIDIClientCreateWithBlock`.
     pub fn subscribe(name: &str, capacity: usize) -> MidiResult<Self> {
-        if capacity == 0 {
-            return Err(MidiError::InvalidArgument(
-                "async stream capacity must be > 0".into(),
-            ));
-        }
-
-        let name = private::to_cstring(name)?;
-        let (stream, sender_ptr) = new_stream_pair(capacity);
-        let mut bridged_client = ptr::null_mut();
-        let mut error = ptr::null_mut();
-
-        let result = unsafe {
-            private::swift_result(
-                cmr_client_new_with_notifications(
-                    name.as_ptr(),
-                    Some(notification_stream_callback),
-                    sender_ptr.cast::<c_void>(),
-                    None,
-                    None,
-                    &raw mut bridged_client,
-                    &raw mut error,
-                ),
-                error,
-            )
-        };
-
-        match result {
-            Ok(()) => Ok(Self {
-                bridged_client,
-                stream,
-                sender_ptr,
-            }),
-            Err(error) => {
-                unsafe { drop_sender(sender_ptr) };
-                Err(error)
-            }
-        }
+        let (stream, context) = new_stream_pair(capacity)?;
+        let bridged_client = notification_client(name, notification_stream_callback, &context)?;
+        Ok(Self {
+            bridged_client,
+            stream,
+            context,
+        })
     }
 }
 
 impl Drop for MidiClientNotificationStream {
     fn drop(&mut self) {
-        // SAFETY: `self.bridged_client` is an ARC-managed Swift object.
-        // Releasing it disposes the underlying `MIDIClientRef` and tears down
-        // the notification block.  The sender is dropped afterwards so that
-        // any in-flight callback that races the ARC release (e.g. a
-        // `kMIDIMsgSetupChanged` fired during `MIDIRestart`) still finds a
-        // live sender and does not dereference freed memory.
-        //
-        // Note: CoreMIDI does not guarantee that in-flight callbacks queued
-        // before disposal are drained synchronously.  The `sender_ptr` null-
-        // check inside `notification_stream_callback` provides a best-effort
-        // guard, but strict safety against a `MIDIRestart`-concurrent drop
-        // would require a barrier (e.g. a serial dispatch queue) not currently
-        // present in this bridge.
+        self.context.deactivate();
         unsafe { private::release_swift_object(self.bridged_client) };
-        // SAFETY: `sender_ptr` was produced by `Box::into_raw` in
-        // `new_stream_pair` and is freed exactly once here.
-        unsafe { drop_sender(self.sender_ptr) };
     }
 }
 
@@ -348,48 +246,37 @@ unsafe impl Sync for MidiClientNotificationStream {}
 pub struct MidiCIDiscoveryStream {
     handle: *mut c_void,
     stream: BoundedAsyncStream<Vec<CiDeviceInfo>>,
-    sender_ptr: *mut AsyncStreamSender<Vec<CiDeviceInfo>>,
+    context: StreamContext<Vec<CiDeviceInfo>>,
 }
 
 impl MidiCIDiscoveryStream {
     #[must_use]
     /// Wraps `MIDICIDeviceManager` discovery notifications.
     pub fn subscribe(capacity: usize) -> Option<Self> {
-        if capacity == 0 {
-            return None;
-        }
-
-        let (stream, sender_ptr) = new_stream_pair(capacity);
+        let (stream, context) = new_stream_pair(capacity).ok()?;
         let handle = unsafe {
             cmr_ci_discovery_subscribe(
                 Some(ci_discovery_stream_callback),
-                sender_ptr.cast::<c_void>(),
+                context.as_ptr(),
+                Some(StreamContext::<Vec<CiDeviceInfo>>::RETAIN),
+                Some(StreamContext::<Vec<CiDeviceInfo>>::RELEASE),
             )
         };
-
         if handle.is_null() {
-            unsafe { drop_sender(sender_ptr) };
             return None;
         }
-
         Some(Self {
             handle,
             stream,
-            sender_ptr,
+            context,
         })
     }
 }
 
 impl Drop for MidiCIDiscoveryStream {
     fn drop(&mut self) {
-        // SAFETY: `self.handle` is a non-null opaque pointer returned by
-        // `cmr_ci_discovery_subscribe`.  Unsubscribing before dropping the
-        // sender matches the subscribe ordering and ensures no further
-        // callbacks reference `sender_ptr`.
+        self.context.deactivate();
         unsafe { cmr_ci_discovery_unsubscribe(self.handle) };
-        // SAFETY: `sender_ptr` was produced by `Box::into_raw` in
-        // `new_stream_pair` and is freed exactly once here.
-        unsafe { drop_sender(self.sender_ptr) };
     }
 }
 
@@ -401,63 +288,26 @@ unsafe impl Sync for MidiCIDiscoveryStream {}
 pub struct MidiThruConnectionStream {
     bridged_client: *mut c_void,
     stream: BoundedAsyncStream<()>,
-    sender_ptr: *mut AsyncStreamSender<()>,
+    context: StreamContext<()>,
 }
 
 impl MidiThruConnectionStream {
     /// Wraps `MIDIClientCreateWithBlock` notifications for `kMIDIMsgThruConnectionsChanged`.
     pub fn subscribe(name: &str, capacity: usize) -> MidiResult<Self> {
-        if capacity == 0 {
-            return Err(MidiError::InvalidArgument(
-                "async stream capacity must be > 0".into(),
-            ));
-        }
-
-        let name = private::to_cstring(name)?;
-        let (stream, sender_ptr) = new_stream_pair(capacity);
-        let mut bridged_client = ptr::null_mut();
-        let mut error = ptr::null_mut();
-
-        let result = unsafe {
-            private::swift_result(
-                cmr_client_new_with_notifications(
-                    name.as_ptr(),
-                    Some(thru_connection_stream_callback),
-                    sender_ptr.cast::<c_void>(),
-                    None,
-                    None,
-                    &raw mut bridged_client,
-                    &raw mut error,
-                ),
-                error,
-            )
-        };
-
-        match result {
-            Ok(()) => Ok(Self {
-                bridged_client,
-                stream,
-                sender_ptr,
-            }),
-            Err(error) => {
-                unsafe { drop_sender(sender_ptr) };
-                Err(error)
-            }
-        }
+        let (stream, context) = new_stream_pair(capacity)?;
+        let bridged_client = notification_client(name, thru_connection_stream_callback, &context)?;
+        Ok(Self {
+            bridged_client,
+            stream,
+            context,
+        })
     }
 }
 
 impl Drop for MidiThruConnectionStream {
     fn drop(&mut self) {
-        // SAFETY: same ordering rationale as `MidiClientNotificationStream`.
-        // Release the Swift-managed MIDI client before the sender so that any
-        // in-flight `ThruConnectionsChanged` notification still finds a live
-        // sender.  See the `MidiClientNotificationStream` drop comment for the
-        // `MIDIRestart` race caveat.
+        self.context.deactivate();
         unsafe { private::release_swift_object(self.bridged_client) };
-        // SAFETY: `sender_ptr` was produced by `Box::into_raw` in
-        // `new_stream_pair` and is freed exactly once here.
-        unsafe { drop_sender(self.sender_ptr) };
     }
 }
 
@@ -494,149 +344,96 @@ impl_stream_accessors!(MidiClientNotificationStream, Notification);
 impl_stream_accessors!(MidiCIDiscoveryStream, Vec<CiDeviceInfo>);
 impl_stream_accessors!(MidiThruConnectionStream, ());
 
-fn new_stream_pair<T>(capacity: usize) -> (BoundedAsyncStream<T>, *mut AsyncStreamSender<T>) {
+fn new_stream_pair<T: Send + 'static>(
+    capacity: usize,
+) -> MidiResult<(BoundedAsyncStream<T>, StreamContext<T>)> {
+    if capacity == 0 {
+        return Err(MidiError::InvalidArgument(
+            "async stream capacity must be > 0".into(),
+        ));
+    }
     let (stream, sender) = BoundedAsyncStream::new(capacity);
-    (stream, Box::into_raw(Box::new(sender)))
+    Ok((stream, CallbackContext::new(sender)))
 }
 
-unsafe fn drop_sender<T>(sender_ptr: *mut AsyncStreamSender<T>) {
-    if !sender_ptr.is_null() {
-        // SAFETY: caller guarantees `sender_ptr` was produced by
-        // `Box::into_raw` and has not been freed before.
-        drop(Box::from_raw(sender_ptr));
-    }
+fn notification_client<T: Send + 'static>(
+    name: &str,
+    callback: unsafe extern "C" fn(*mut c_void, *const c_char),
+    context: &StreamContext<T>,
+) -> MidiResult<*mut c_void> {
+    let name = private::to_cstring(name)?;
+    let mut bridged_client = ptr::null_mut();
+    let mut error = ptr::null_mut();
+    unsafe {
+        private::swift_result(
+            cmr_client_new_with_notifications(
+                name.as_ptr(),
+                Some(callback),
+                context.as_ptr(),
+                Some(StreamContext::<T>::RETAIN),
+                Some(StreamContext::<T>::RELEASE),
+                &raw mut bridged_client,
+                &raw mut error,
+            ),
+            error,
+        )
+    }?;
+    Ok(bridged_client)
 }
 
-unsafe fn copy_event_list_to_sender(evtlist: *const ffi::MIDIEventList, ctx: *mut c_void) {
-    if ctx.is_null() {
-        return;
-    }
-
-    // SAFETY: `ctx` is the `AsyncStreamSender<OwnedEventList>` pointer stored
-    // as `connRefCon` via `MIDIPortConnectSource`.  The sender outlives all
-    // callbacks because the port/endpoint is disposed before the sender is
-    // freed (see the Drop implementations).  We hold a shared reference only
-    // for the duration of this call; the sender's internal channel handles
-    // concurrent access.
-    //
-    // Real-time note: `OwnedEventList::copy_from` allocates a Vec here on the
-    // CoreMIDI real-time server thread.  See `OwnedEventList::copy_from` for
-    // the trade-off and the low-allocation alternative.
-    let sender = &*ctx.cast::<AsyncStreamSender<OwnedEventList>>();
-    if let Some(event_list) = OwnedEventList::copy_from(evtlist) {
-        sender.push(event_list);
-    }
-}
-
-unsafe fn parse_notification(payload_json: *const c_char) -> Option<Notification> {
-    if payload_json.is_null() {
-        return None;
-    }
-
-    let payload = CStr::from_ptr(payload_json).to_string_lossy().into_owned();
-    Notification::from_json_str(&payload).ok()
-}
-
-extern "C" fn event_stream_receive_block_invoke(
-    _block: *const c_void,
-    evtlist: *const ffi::MIDIEventList,
-    src_conn_ref_con: *mut c_void,
+unsafe extern "C" fn event_list_stream_callback(
+    context: *mut c_void,
+    event_list: *const ffi::MIDIEventList,
+    _src_conn_ref_con: *mut c_void,
 ) {
-    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
-        copy_event_list_to_sender(evtlist, src_conn_ref_con);
-    }));
-}
-
-unsafe extern "C" fn virtual_destination_stream_callback(
-    evtlist: *const ffi::MIDIEventList,
-    ctx: *mut c_void,
-) {
-    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
-        copy_event_list_to_sender(evtlist, ctx);
-    }));
+    let _ = unsafe {
+        StreamContext::<OwnedEventList>::with(context, "coremidi event list stream", |sender| {
+            if let Some(event_list) = OwnedEventList::copy_from(event_list) {
+                sender.push(event_list);
+            }
+        })
+    };
 }
 
 unsafe extern "C" fn notification_stream_callback(
-    user_info: *mut c_void,
+    context: *mut c_void,
     payload_json: *const c_char,
 ) {
-    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
-        if user_info.is_null() {
-            return;
-        }
-
-        let sender = &*user_info.cast::<AsyncStreamSender<Notification>>();
-        if let Some(notification) = parse_notification(payload_json) {
-            sender.push(notification);
-        }
-    }));
+    let _ = unsafe {
+        StreamContext::<Notification>::with(context, "coremidi notification stream", |sender| {
+            if let Some(notification) = Notification::from_bridge_payload(payload_json) {
+                sender.push(notification);
+            }
+        })
+    };
 }
 
 unsafe extern "C" fn thru_connection_stream_callback(
-    user_info: *mut c_void,
+    context: *mut c_void,
     payload_json: *const c_char,
 ) {
-    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
-        if user_info.is_null() {
-            return;
-        }
-
-        let sender = &*user_info.cast::<AsyncStreamSender<()>>();
-        if matches!(
-            parse_notification(payload_json),
-            Some(Notification::ThruConnectionsChanged)
-        ) {
-            sender.push(());
-        }
-    }));
+    let _ = unsafe {
+        StreamContext::<()>::with(context, "coremidi thru connection stream", |sender| {
+            if matches!(
+                Notification::from_bridge_payload(payload_json),
+                Some(Notification::ThruConnectionsChanged)
+            ) {
+                sender.push(());
+            }
+        })
+    };
 }
 
-unsafe extern "C" fn ci_discovery_stream_callback(ctx: *mut c_void) {
-    let _ = catch_unwind(AssertUnwindSafe(|| unsafe {
-        if ctx.is_null() {
-            return;
-        }
-
-        let sender = &*ctx.cast::<AsyncStreamSender<Vec<CiDeviceInfo>>>();
-        if let Ok(devices) = discovered_ci_devices() {
-            sender.push(devices);
-        }
-    }));
-}
-
-#[repr(C)]
-struct BlockDescriptor {
-    reserved: usize,
-    size: usize,
-}
-
-#[repr(C)]
-struct GlobalReceiveBlock {
-    isa: *const c_void,
-    flags: i32,
-    reserved: i32,
-    invoke: extern "C" fn(*const c_void, *const ffi::MIDIEventList, *mut c_void),
-    descriptor: *const BlockDescriptor,
-}
-
-unsafe impl Send for GlobalReceiveBlock {}
-unsafe impl Sync for GlobalReceiveBlock {}
-
-const BLOCK_IS_GLOBAL: i32 = 1 << 28;
-
-static EVENT_STREAM_BLOCK_DESCRIPTOR: BlockDescriptor = BlockDescriptor {
-    reserved: 0,
-    size: core::mem::size_of::<GlobalReceiveBlock>(),
-};
-
-fn event_stream_receive_block() -> *const c_void {
-    static BLOCK: OnceLock<GlobalReceiveBlock> = OnceLock::new();
-    std::ptr::from_ref(BLOCK.get_or_init(|| GlobalReceiveBlock {
-        isa: ptr::addr_of!(_NSConcreteGlobalBlock).cast(),
-        flags: BLOCK_IS_GLOBAL,
-        reserved: 0,
-        invoke: event_stream_receive_block_invoke,
-        descriptor: &raw const EVENT_STREAM_BLOCK_DESCRIPTOR,
-    }))
-    .cast::<c_void>()
+unsafe extern "C" fn ci_discovery_stream_callback(context: *mut c_void) {
+    let _ = unsafe {
+        StreamContext::<Vec<CiDeviceInfo>>::with(
+            context,
+            "coremidi CI discovery stream",
+            |sender| {
+                if let Ok(devices) = discovered_ci_devices() {
+                    sender.push(devices);
+                }
+            },
+        )
+    };
 }

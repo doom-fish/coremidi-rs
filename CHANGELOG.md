@@ -39,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `COVERAGE_AUDIT.md` listed 15 wrapped symbols, including `MIDIDestinationCreate`, as exempt and
   counted `MIDIEventListForEachEvent` as wrapped. Both audit files now say what their numbers
   measure.
+- `build.rs` no longer adds the toolchain's Swift 5.5 back-deployment directory
+  (`usr/lib/swift-5.5/macosx`) to the link search path or rpath. Its old
+  `libswift_Concurrency.dylib` could shadow the SDK's `libswift_Concurrency.tbd` for the whole
+  binary and break linking next to Swift bridges that use newer concurrency APIs.
 
 ### Changed
 

@@ -64,14 +64,9 @@ fn main() {
     match Command::new("xcode-select").arg("-p").output() {
         Ok(output) if output.status.success() => {
             let xcode_path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            let legacy_swift_path = format!(
-                "{xcode_path}/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.5/macosx"
-            );
             let swift_path =
                 format!("{xcode_path}/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx");
-            println!("cargo:rustc-link-search=native={legacy_swift_path}");
             println!("cargo:rustc-link-search=native={swift_path}");
-            println!("cargo:rustc-link-arg=-Wl,-rpath,{legacy_swift_path}");
             println!("cargo:rustc-link-arg=-Wl,-rpath,{swift_path}");
         }
         Ok(output) => {

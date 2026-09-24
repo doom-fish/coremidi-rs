@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `NetworkSession::network_port` declared the bridge's return value as `i32` while Swift
+  returns an `Int`; the declaration now matches.
 - `MidiInputPort::disconnect_source` frees the connection context that
   `connect_source_with_protocol_callback` created (one leaked per connect/disconnect cycle).
   Disconnecting, connecting the same source again (which replaces its callback) and dropping the

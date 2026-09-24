@@ -12,7 +12,7 @@ extern "C" {
     fn cmr_network_constants_json() -> *mut c_char;
     fn cmr_network_session_is_enabled() -> bool;
     fn cmr_network_session_set_enabled(enabled: bool);
-    fn cmr_network_session_network_port() -> i32;
+    fn cmr_network_session_network_port() -> isize;
     fn cmr_network_session_network_name() -> *mut c_char;
     fn cmr_network_session_local_name() -> *mut c_char;
     fn cmr_network_session_connection_policy() -> i32;
@@ -172,7 +172,7 @@ impl NetworkSession {
     #[must_use]
     /// Wraps the CoreMIDI network port operation for `NetworkSession`.
     pub fn network_port(self) -> u64 {
-        u64::try_from(unsafe { cmr_network_session_network_port().max(0) }).unwrap_or(0)
+        u64::try_from(unsafe { cmr_network_session_network_port() }).unwrap_or(0)
     }
 
     /// Wraps the CoreMIDI network name operation for `NetworkSession`.

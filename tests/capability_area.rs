@@ -37,6 +37,9 @@ fn capability_area_snapshot_calls_work() -> coremidi::MidiResult<()> {
     assert_eq!(snapshot.midi_channel, 3);
     assert_eq!(snapshot.enabled_profiles.len(), 1);
     assert_eq!(snapshot.enabled_profiles[0], example_profile);
-    assert!(snapshot.disabled_profiles.is_empty());
+    assert_eq!(
+        snapshot.disabled_profiles,
+        [] as [coremidi::LegacyCiProfileInfo; 0]
+    );
     Ok(())
 }

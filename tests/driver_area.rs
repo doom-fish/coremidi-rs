@@ -6,9 +6,9 @@ use coremidi::driver::{driver_interface_ids, driver_io_run_loop_available};
 fn driver_area_reports_interface_ids() {
     common::connect_midi_server();
     let ids = driver_interface_ids().expect("driver interface ids available");
-    assert!(!ids.driver_type_id.is_empty());
-    assert!(!ids.driver_interface_id.is_empty());
-    assert!(!ids.driver_interface2_id.is_empty());
-    assert!(!ids.driver_interface3_id.is_empty());
+    assert_ne!(ids.driver_type_id, "");
+    assert_ne!(ids.driver_interface_id, "");
+    assert_ne!(ids.driver_interface2_id, "");
+    assert_ne!(ids.driver_interface3_id, "");
     let _ = driver_io_run_loop_available();
 }

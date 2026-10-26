@@ -7,7 +7,7 @@ fn network_area_exposes_session_metadata() {
     common::connect_midi_server();
     let session = NetworkSession::default();
     let constants = NetworkSession::constants().expect("network constants available");
-    assert!(!constants.bonjour_service_type.is_empty());
+    assert_ne!(constants.bonjour_service_type, "");
     assert!(session.connection_policy().is_ok());
     assert!(session.contacts().is_ok());
     assert!(session.connections().is_ok());

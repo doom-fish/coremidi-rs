@@ -2,7 +2,7 @@
 
 Safe Rust bindings for Apple's [CoreMIDI](https://developer.apple.com/documentation/coremidi) framework on macOS. The published Cargo package is `coremidi-rs`; the Rust library target is `coremidi`.
 
-> **Status:** v0.6.0 fixes use-after-free and aliasing bugs in the packet buffers and callback contexts, and adds `MidiEventReceiver`, a receive path that neither locks nor allocates on the CoreMIDI receive thread.
+> **Status:** Version 0.7.0 preserves every word in an owned MIDI packet. Its reported length matches the payload.
 
 Requires macOS 11 or newer. Some APIs need a newer system and return an error on older ones: UMP endpoint and MIDI-CI discovery APIs (macOS 15), `MIDIEventPacketSysexBytesForGroup` (macOS 14), Bluetooth MIDI connection helpers (macOS 13).
 
@@ -37,7 +37,7 @@ By default, the crate exposes safe wrappers and raw CoreMIDI data types. To expo
 
 ```toml
 [dependencies]
-coremidi-rs = { version = "0.6.0", features = ["raw-ffi"] }
+coremidi-rs = { version = "0.7.0", features = ["raw-ffi"] }
 ```
 
 Without `raw-ffi`, the raw function declarations stay crate-private and back the safe APIs.
@@ -77,8 +77,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 the port or destination together with a `MidiEventReceiver`. The receiver is a ring of `capacity`
 fixed-size `MidiEventRecord`s (timestamp, protocol, source endpoint and up to 64 UMP words),
 allocated when it is created. The CoreMIDI receive thread copies each event packet into the ring
-without locking or allocating; when the ring is full it overwrites the oldest record and counts it
-in `dropped_count()`.
+without a lock or allocation. A full ring normally drops the oldest record.
+With `doom-fish-utils` 0.5.0, the producer can wait for a slot that a reader holds.
+On `main`, the ring drops the incoming record instead. `dropped_count()` includes both kinds of loss.
 
 ```rust,no_run
 use coremidi::prelude::*;
@@ -121,7 +122,7 @@ Enable the `async` feature to get executor-agnostic event streams backed by
 
 ```toml
 [dependencies]
-coremidi-rs = { version = "0.6", features = ["async"] }
+coremidi-rs = { version = "0.7.0", features = ["async"] }
 ```
 
 | Stream type | Item | Source |

@@ -1,6 +1,5 @@
 use core::ffi::c_void;
 use core::fmt;
-use core::future::Future;
 use core::ptr;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
@@ -132,8 +131,8 @@ impl MidiEventReceiver {
         self.consumer.pop()
     }
 
-    pub fn next(&self) -> impl Future<Output = Option<MidiEventRecord>> + '_ {
-        self.consumer.pop_async()
+    pub async fn next(&mut self) -> Option<MidiEventRecord> {
+        self.consumer.pop_async().await
     }
 
     #[must_use]

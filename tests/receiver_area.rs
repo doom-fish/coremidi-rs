@@ -95,7 +95,7 @@ fn receiver_next_resolves_with_a_record() -> MidiResult<()> {
     let source =
         client.virtual_source_with_protocol("receiver area async source", MidiProtocol::Midi2)?;
     source.set_integer_property(MidiProperty::private(), 1)?;
-    let (port, receiver) =
+    let (port, mut receiver) =
         client.input_port_with_receiver("receiver area async input", MidiProtocol::Midi2, 8)?;
     port.connect(source.endpoint())?;
 
@@ -109,7 +109,7 @@ fn receiver_next_resolves_with_a_record() -> MidiResult<()> {
 fn receiver_closes_once_the_port_is_dropped() -> MidiResult<()> {
     common::connect_midi_server();
     let client = MidiClient::new("receiver area port close")?;
-    let (port, receiver) = client.input_port_with_receiver(
+    let (port, mut receiver) = client.input_port_with_receiver(
         "receiver area port close input",
         MidiProtocol::Midi1,
         8,

@@ -62,7 +62,7 @@ pub mod thru_connection;
 #[cfg(feature = "async")]
 pub use crate::async_api::{
     MidiCIDiscoveryStream, MidiClientNotificationStream, MidiEventStream, MidiThruConnectionStream,
-    MidiVirtualDestinationStream, OwnedEventList,
+    MidiVirtualDestinationStream, OwnedEventList, OwnedEventPacket,
 };
 pub use capability::{
     ci_device_manager_constants, discovered_ci_devices, legacy_ci_profile, CiDeviceInfo,
@@ -129,6 +129,6 @@ pub mod prelude {
     #[cfg(feature = "async")]
     pub use crate::{
         MidiCIDiscoveryStream, MidiClientNotificationStream, MidiEventStream,
-        MidiThruConnectionStream, MidiVirtualDestinationStream, OwnedEventList,
+        MidiThruConnectionStream, MidiVirtualDestinationStream, OwnedEventList, OwnedEventPacket,
     };
 }

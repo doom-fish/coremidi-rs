@@ -86,8 +86,8 @@ fn test_midi_event_stream_copies_event_lists_from_a_source() -> MidiResult<()> {
     let list = wait_for(|| stream.try_next()).expect("event list");
     assert_eq!(list.protocol, MidiProtocol::Midi2);
     assert_eq!(list.packets.len(), 1);
-    let packet = list.packets[0];
-    let (timestamp, word_count, words) = (packet.timeStamp, packet.wordCount, packet.words);
+    let packet = &list.packets[0];
+    let (timestamp, word_count, words) = (packet.timestamp, packet.words.len(), &packet.words);
     assert_eq!(timestamp, 3);
     assert_eq!(word_count, 2);
     assert_eq!(&words[..2], &[0x4090_3C00, 0xFFFF_0000]);
@@ -117,7 +117,7 @@ fn test_midi_virtual_destination_stream_copies_sent_event_lists() -> MidiResult<
     let list = wait_for(|| stream.try_next()).expect("event list");
     assert_eq!(list.protocol, MidiProtocol::Midi1);
     assert_eq!(list.packets.len(), 1);
-    let words = list.packets[0].words;
+    let words = &list.packets[0].words;
     assert_eq!(words[0], 0x2090_3C7F);
     Ok(())
 }

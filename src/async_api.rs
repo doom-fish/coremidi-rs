@@ -10,7 +10,7 @@ use crate::capability::{discovered_ci_devices, CiDeviceInfo};
 use crate::error::{result_from_status, MidiError, MidiResult};
 use crate::ffi;
 use crate::notification::Notification;
-use crate::packet::MidiProtocol;
+use crate::packet::{EventListRef, MidiProtocol};
 use crate::private;
 
 extern "C" {
@@ -35,12 +35,18 @@ extern "C" {
 type StreamContext<T> = CallbackContext<AsyncStreamSender<T>>;
 
 #[derive(Debug, Clone)]
+pub struct OwnedEventPacket {
+    pub timestamp: ffi::MIDITimeStamp,
+    pub words: Vec<u32>,
+}
+
+#[derive(Debug, Clone)]
 /// Wraps `MIDIEventList`.
 pub struct OwnedEventList {
     /// Mirrors the CoreMIDI protocol field.
     pub protocol: MidiProtocol,
     /// Mirrors the CoreMIDI packets field.
-    pub packets: Vec<ffi::MIDIEventPacket>,
+    pub packets: Vec<OwnedEventPacket>,
 }
 
 impl OwnedEventList {
@@ -67,34 +73,14 @@ impl OwnedEventList {
             return None;
         }
 
-        let protocol_raw = ptr::addr_of!((*ptr).protocol).read_unaligned();
-        let protocol = MidiProtocol::from_raw(protocol_raw)?;
-        let num_packets = ptr::addr_of!((*ptr).numPackets).read_unaligned() as usize;
-        let mut packets = Vec::with_capacity(num_packets);
-        let mut packet_ptr = ptr::addr_of!((*ptr).packet).cast::<ffi::MIDIEventPacket>();
-
-        for _ in 0..num_packets {
-            // CoreMIDI packs event packets compactly: each occupies only
-            // `wordCount` words, not the full fixed-size `[u32; 64]` declared on
-            // `MIDIEventPacket`.  Reading the whole struct by value would read
-            // past the end of the variable-length event-list buffer for the
-            // trailing packet (an out-of-bounds read on the real-time server
-            // thread).  Copy the header plus only the valid words instead,
-            // clamping `wordCount` to the struct capacity.
-            let time_stamp = ptr::addr_of!((*packet_ptr).timeStamp).read_unaligned();
-            let word_count = ptr::addr_of!((*packet_ptr).wordCount).read_unaligned();
-            let valid = (word_count as usize).min(64);
-            let mut packet = ffi::MIDIEventPacket {
-                timeStamp: time_stamp,
-                wordCount: word_count,
-                words: [0; 64],
-            };
-            let words_src = ptr::addr_of!((*packet_ptr).words).cast::<u32>();
-            for (i, slot) in packet.words[..valid].iter_mut().enumerate() {
-                *slot = words_src.add(i).read_unaligned();
-            }
-            packets.push(packet);
-            packet_ptr = ffi::MIDIEventPacketNext(packet_ptr);
+        let list = unsafe { EventListRef::from_ptr(ptr) };
+        let protocol = list.protocol()?;
+        let mut packets = Vec::with_capacity(list.packet_count() as usize);
+        for packet in list.iter() {
+            packets.push(OwnedEventPacket {
+                timestamp: packet.timestamp(),
+                words: packet.words().to_vec(),
+            });
         }
 
         Some(Self { protocol, packets })

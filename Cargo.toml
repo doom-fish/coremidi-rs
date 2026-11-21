@@ -1,6 +1,6 @@
 [package]
 name = "coremidi-rs"
-version = "0.6.2"
+version = "0.7.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/doom-fish/coremidi-rs"
@@ -43,8 +43,8 @@ raw-ffi = []
 async = []
 
 [dependencies]
-apple-cf = { path = "../apple-cf-rs", version = ">=0.11, <0.12" }
-doom-fish-utils = { path = "../doom-fish-utils", version = ">=0.4.1, <0.5" }
+apple-cf = { path = "../apple-cf-rs", version = "0.12.0" }
+doom-fish-utils = { path = "../doom-fish-utils", version = "0.5.0" }
 libc = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

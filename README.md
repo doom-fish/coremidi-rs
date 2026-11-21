@@ -112,7 +112,7 @@ The other receive paths:
 - `MidiClient::input_port` and `MidiClient::virtual_destination` (`unsafe`) take the legacy
   `MIDIReadProc`; CoreMIDI may still be running it when `disconnect_source` or `Drop` returns.
 - The async `MidiEventStream` and `MidiVirtualDestinationStream` copy every event list into a
-  heap-allocated `OwnedEventList` on the receive thread.
+  heap-allocated `OwnedEventList` on the receive thread. Its `OwnedEventPacket` values retain every word, including packets longer than 64 words.
 
 ## Async API
 
